@@ -104,6 +104,12 @@ label{font-size:.88rem;font-weight:700;color:var(--muted)}
 button.heart{background:none;border-color:var(--line);color:var(--muted);font-weight:700}
 button.heart.on{color:#d9334a;border-color:#d9334a66;background:#d9334a12}
 .commit{font-size:.92rem;border:1px dashed var(--line);border-radius:10px;padding:8px 10px}
+@media print{
+  body.printsheet .sky,body.printsheet #main>*:not(#sheet),body.printsheet .noprint,body.printsheet #sheet .row{display:none!important}
+  body.printsheet{background:#fff;color:#000}
+  body.printsheet #sheet{border:0}
+  body.printsheet #sheet details{display:block}
+}
 details summary{cursor:pointer;font-weight:700;font-family:var(--display)}
 details ol,details ul{margin:.4em 0;padding-left:1.3em}
 @media (prefers-reduced-motion:no-preference){.spin{animation:pop .35s ease-out}@keyframes pop{from{transform:scale(.96);opacity:.6}to{transform:none;opacity:1}}}
@@ -360,6 +366,7 @@ function view(){
   if(game===false)return msg+`<section class="panel"><h2>Game not found</h2><p class="muted">Check the link, or ask your friend to send it again.</p><div class="row"><button data-act="home">My games</button></div></section>`;
   const bar=`<div class="spread"><button class="link" data-act="home">← My games</button><h2>${esc(game.name||'Game')}</h2></div>`;
   if(game.status==='lobby')return msg+who+bar+lobby()+rulesBox()+suggestBox();
+  if(game.status==='over')return msg+who+bar+commitsPanel()+scoreboard()+feed()+suggestBox()+rulesBox();
   return msg+who+bar+scoreboard()+turnPanel()+commitsPanel()+feed()+suggestBox()+rulesBox()+hostBox();
 }
 function nameBox(){
@@ -449,13 +456,77 @@ function turnPanel(){
   <div class="row"><button class="primary" data-act="post">Post and end my turn</button><button data-act="save">Save for later</button><button data-act="pass">Pass</button></div>
   <p class="small muted">No pressure: passing or saving a card is always fine.</p></section>`;
 }
+/* ---------- game sheet: my commitments, the ones I'm partner for, everyone else's ---------- */
+function commitGroups(){
+  const list=posts.filter(p=>p.commit);
+  return {list,mine:list.filter(p=>p.by===me),partner:list.filter(p=>p.by!==me&&p.commit.partner===me),
+    rest:list.filter(p=>p.by!==me&&p.commit.partner!==me)};
+}
+function fmtDate(d){if(!d)return 'no date';const x=new Date(d+'T12:00:00');return isNaN(x)?d:x.toLocaleDateString(undefined,{weekday:'short',month:'short',day:'numeric'})}
+function notesFor(id){return posts.filter(n=>n.kind==='note'&&n.parent===id).sort((a,b)=>a.at-b.at)}
+function commitRow(p,mode){
+  const c=p.commit;const today=new Date().toISOString().slice(0,10);const late=!c.done&&c.due&&c.due<=today;
+  const status=c.done?'<span class="chip" style="background:var(--P)">Done</span>':late?'<span class="chip" style="background:var(--danger)">Check-in time</span>':'';
+  const who=mode==='mine'?`Your partner: <b>${esc(c.partner?nameOf(c.partner):'none')}</b>`
+    :mode==='partner'?`<b>${esc(nameOf(p.by))}</b> committed. You’re the partner.`
+    :`<b>${esc(nameOf(p.by))}</b> · partner ${esc(c.partner?nm(c.partner):'none')}`;
+  const ns=notesFor(p.id);const inGame=game.players.includes(me);
+  const canTalk=inGame&&(p.by===me||c.partner===me);
+  const ask=mode==='partner'&&!c.done?`Hi ${nameOf(p.by)}, how’s it going with: ${c.text}?`:'';
+  return `<div class="commit"><div class="spread"><span class="answer">${esc(c.text)}</span>${status}</div>
+    <div class="small muted">${who} · by ${esc(fmtDate(c.due))} · ${CATS[p.cat].name}</div>
+    ${ns.length?`<div class="replies" style="margin-top:6px">${ns.map(n=>`<div class="reply small"><b>${esc(nm(n.by))}</b> <span class="muted">${new Date(n.at).toLocaleDateString(undefined,{month:'short',day:'numeric'})}</span><div class="answer">${esc(n.text)}</div></div>`).join('')}</div>`:''}
+    ${canTalk?`<div class="row" style="margin-top:6px"><input id="n_${p.id}" placeholder="${esc(mode==='partner'?'Send a check-in message':'Send an update or reply')}" style="flex:1;min-width:160px">
+      <button class="small" data-act="note" data-arg="${p.id}">Send</button>
+      ${ask?`<button class="small" data-act="asknote" data-arg="${p.id}">Ask how it’s going</button>`:''}
+      ${!c.done&&p.by===me?`<button class="small primary" data-act="done" data-arg="${p.id}">I did it (+1 ${CATS[p.cat].name})</button>`:''}</div>`:''}
+  </div>`;
+}
 function commitsPanel(){
-  const list=posts.filter(p=>p.commit);if(!list.length)return '';
-  const today=new Date().toISOString().slice(0,10);
-  return `<section class="panel"><h2>Commitments</h2>${list.map(p=>{const c=p.commit;const late=!c.done&&c.due&&c.due<=today;
-    return `<div class="commit"><div class="spread"><span><b>${esc(nm(p.by))}</b>: ${esc(c.text)}</span>${c.done?'<span class="chip" style="background:var(--B)">Done</span>':late?'<span class="chip" style="background:var(--danger)">Check in</span>':''}</div>
-    <div class="small muted">Partner: ${esc(c.partner?nm(c.partner):'none')}${c.due?' · check-in '+esc(c.due):''} · ${CATS[p.cat].name}</div>
-    ${!c.done&&p.by===me?`<div class="row" style="margin-top:6px"><button class="small" data-act="done" data-arg="${p.id}">I did it (+1 ${CATS[p.cat].name})</button></div>`:''}</div>`}).join('')}</section>`;
+  const g=commitGroups();const over=game.status==='over';
+  if(!g.list.length)return over?`<section class="panel"><h2>Your game sheet</h2><p class="muted">No commitments were made this game.</p></section>`:'';
+  return `<section class="panel" id="sheet"><h2>${over?'Your game sheet':'Commitments'}</h2>
+  ${over?'<p class="sub">Keep this. Your commitments, who’s holding you to them, and the ones you’re holding others to. This page stays at this link.</p>':''}
+  <h3 class="small muted" style="font-family:var(--body);text-transform:uppercase;letter-spacing:.06em">Your commitments</h3>
+  ${g.mine.length?g.mine.map(p=>commitRow(p,'mine')).join(''):'<p class="small muted">None yet. Tick “I’m making a commitment” on a card.</p>'}
+  <h3 class="small muted" style="font-family:var(--body);text-transform:uppercase;letter-spacing:.06em">You’re the accountability partner for</h3>
+  ${g.partner.length?g.partner.map(p=>commitRow(p,'partner')).join(''):'<p class="small muted">Nobody has picked you yet.</p>'}
+  ${g.rest.length?`<details><summary class="small">Everyone else’s commitments (${g.rest.length})</summary>${g.rest.map(p=>commitRow(p,'rest')).join('')}</details>`:''}
+  <div class="row noprint"><button class="small" data-act="sheetcopy">Copy as text</button><button class="small" data-act="sheetmail">Email it to me</button>
+    <button class="small" data-act="sheetprint">Save as PDF / print</button><button class="small" data-act="sheetcal">Add check-in dates to my calendar</button></div>
+  </section>`;
+}
+function sheetText(){
+  const g=commitGroups();const L=[];
+  L.push(`Better Me game sheet: ${game.name||'our game'} (${nameOf(me)})`,`${SITE_URL}#${gid}`,'');
+  L.push('MY COMMITMENTS');
+  if(!g.mine.length)L.push('- none');
+  g.mine.forEach(p=>L.push(`- ${p.commit.text}\n  By: ${fmtDate(p.commit.due)} · Partner: ${p.commit.partner?nameOf(p.commit.partner):'none'}${p.commit.done?' · DONE':''}`));
+  L.push('','I’M THE PARTNER FOR');
+  if(!g.partner.length)L.push('- none');
+  g.partner.forEach(p=>L.push(`- ${nameOf(p.by)}: ${p.commit.text}\n  By: ${fmtDate(p.commit.due)}${p.commit.done?' · DONE':''}`));
+  return L.join('\n');
+}
+function sheetIcs(){
+  const g=commitGroups();const items=g.mine.concat(g.partner).filter(p=>p.commit.due&&!p.commit.done);
+  if(!items.length){ui.msg='No check-in dates to add yet.';render();return}
+  const e=s=>String(s).replace(/[\\,;]/g,m=>'\\'+m).replace(/\n/g,'\\n');
+  const stamp=new Date().toISOString().replace(/[-:]/g,'').slice(0,15)+'Z';
+  const ev=items.map(p=>{const d=p.commit.due.replace(/-/g,'');const nx=new Date(p.commit.due+'T12:00:00');nx.setDate(nx.getDate()+1);
+    const d2=nx.toISOString().slice(0,10).replace(/-/g,'');
+    const title=p.by===me?`Better Me: ${p.commit.text} (partner ${p.commit.partner?nameOf(p.commit.partner):'none'})`:`Better Me: check in with ${nameOf(p.by)}`;
+    return ['BEGIN:VEVENT',`UID:${p.id}@bettermegame.com`,`DTSTAMP:${stamp}`,`DTSTART;VALUE=DATE:${d}`,`DTEND;VALUE=DATE:${d2}`,
+      `SUMMARY:${e(title)}`,`DESCRIPTION:${e((p.by===me?'':nameOf(p.by)+' committed to: ')+p.commit.text+'\n'+SITE_URL+'#'+gid)}`,'END:VEVENT'].join('\r\n')}).join('\r\n');
+  const ics=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Better Me//Game//EN',ev,'END:VCALENDAR'].join('\r\n');
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([ics],{type:'text/calendar'}));a.download='better-me-check-ins.ics';
+  document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},1000);
+}
+async function addNote(postId,preset){
+  const p=posts.find(x=>x.id===postId);if(!p||!p.commit||!(p.by===me||p.commit.partner===me))return;
+  const box=$('#n_'+postId);const text=(preset||(box&&box.value)||'').trim();
+  if(!text){ui.msg='Type a message first.';return}
+  await POSTS().add({by:me,cat:null,idx:null,text:text.slice(0,1000),pts:0,kind:'note',parent:postId,at:Date.now()});
+  if(box)box.value='';
 }
 function joinOpts(p){
   const l=ptsLimit(p.cat,p.idx);const o=[];
@@ -481,7 +552,7 @@ function postLine(p){
     :`<div class="row"><button class="small" data-act="joinopen" data-arg="${p.id}">Join in on this card</button></div>`):''}</div>`;
 }
 function feed(){
-  const top=posts.filter(p=>p.kind!=='join').slice().reverse();
+  const top=posts.filter(p=>p.kind!=='join'&&p.kind!=='note').slice().reverse();
   return `<section class="panel"><h2>The story so far</h2>${top.length?`<div class="feed">${top.map(postLine).join('')}</div>`:'<p class="muted">No turns yet. The first answers will show up here.</p>'}</section>`;
 }
 function suggestBox(){
@@ -533,6 +604,10 @@ document.addEventListener('click',e=>{
   if(a==='joinopen'){ui.joinOpen=arg;render();return}
   if(a==='joinclose'){ui.joinOpen=null;render();return}
   if(a==='editname'){ui.editName=true;render();return}
+  if(a==='sheetcopy'){copyText(sheetText(),'Game sheet copied. Paste it into notes, a message or an email.','');return}
+  if(a==='sheetmail'){location.href='mailto:?subject='+encodeURIComponent('My Better Me game sheet')+'&body='+encodeURIComponent(sheetText());return}
+  if(a==='sheetprint'){document.body.classList.add('printsheet');window.print();setTimeout(()=>document.body.classList.remove('printsheet'),500);return}
+  if(a==='sheetcal'){sheetIcs();return}
   if(a==='home'){openGame(null);return}
   if(a==='open'){openGame(arg);return}
   if(a==='copylink'){copyText(SITE_URL+'#'+gid,'Link copied. Paste it into WhatsApp, Messenger or LINE.','roomlink');return}
@@ -540,7 +615,7 @@ document.addEventListener('click',e=>{
   const map={savename:saveName,new:newGame,join:joinGame,spin,pass:passCard,save:saveCard,post:postAnswer,skip:skipTurn,endnow:endNow,
     suggest:addSuggestion,plus:()=>plusOne(arg),remove:()=>removePlayer(arg),
     start:()=>startGame(+(($('#target')||{}).value||2)),choose:()=>choose(arg),playsaved:()=>playSaved(+arg),
-    joinpost:()=>joinIn(arg),done:()=>markDone(arg),heart:()=>{const [c,i]=arg.split(':');return toggleHeart(c,+i)}};
+    joinpost:()=>joinIn(arg),done:()=>markDone(arg),note:()=>addNote(arg),asknote:()=>{const p=posts.find(x=>x.id===arg);return addNote(arg,p?`How’s it going with: ${p.commit.text}?`:'')},heart:()=>{const [c,i]=arg.split(':');return toggleHeart(c,+i)}};
   if(map[a])act(map[a]);
 });
 boot();
