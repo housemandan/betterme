@@ -7,7 +7,9 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script><title>Play Better Me Online</title>
 <meta name="description" content="Play Better Me, the game of growth and friendship, online with friends. Free, no sign-up.">
-<link rel="icon" href="logo.png">
+<link rel="icon" href="favicon.ico" sizes="any">
+<link rel="icon" type="image/png" href="icon-512.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Nunito+Sans:opsz,wght@6..12,400;6..12,600;6..12,800&display=swap">
 <style>
@@ -40,11 +42,13 @@ body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:16px
   linear-gradient(160deg,var(--space1),var(--space2) 55%,var(--space3));
   color:#fff;padding-block:22px 26px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
 .sky .in{max-width:760px;margin:0 auto;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
-.sky .in>a{flex:none}
-.sky img{width:150px;height:auto;display:block}
-@media (max-width:480px){.sky img{width:110px}}
-.sky h1{font-family:var(--display);font-size:1.6rem;margin:0;letter-spacing:.02em;text-wrap:balance}
-.sky p{margin:.2em 0 0;color:#d9d3ff}
+.sky .in{gap:20px 28px}
+.brand{flex:none;display:flex;flex-direction:column;align-items:center;gap:4px;text-decoration:none;color:#fff}
+.brand img{width:190px;height:auto;display:block;filter:drop-shadow(0 4px 14px #5ad4e655)}
+.brand span{font-family:var(--display);font-weight:700;font-size:2rem;letter-spacing:.08em;line-height:1;text-shadow:0 2px 8px #0008}
+.sky h1{font-family:var(--display);font-size:1.7rem;margin:0;letter-spacing:.03em;text-wrap:balance}
+.sky p{margin:.25em 0 0;color:#d9d3ff;font-size:1.05rem}
+@media (max-width:520px){.sky .in{justify-content:center;text-align:center}.brand img{width:150px}.brand span{font-size:1.6rem}}
 .sky a{color:#9fe6ef}
 .wrap{max-width:760px;margin:0 auto;padding-block:18px 48px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:16px}
 h1,h2,h3{margin:0;text-wrap:balance}
@@ -105,7 +109,7 @@ details ol,details ul{margin:.4em 0;padding-left:1.3em}
 </head>
 <body>
 <header class="sky"><div class="in">
-  <a href="/"><img src="logo.png" alt="Better Me"></a>
+  <a href="/" class="brand"><img src="infinity.png" alt=""><span>Better Me</span></a>
   <div><h1>Play Online</h1><p>The Game of Growth and Friendship, one turn at a time. <a href="/">bettermegame.com</a></p></div>
 </div></header>
 <div class="wrap" id="app">
