@@ -101,6 +101,8 @@ label{font-size:.88rem;font-weight:700;color:var(--muted)}
 .qline{font-size:.9rem;color:var(--muted);border-left:3px solid var(--line);padding-left:10px}
 .replies{display:flex;flex-direction:column;gap:6px;margin-left:12px}
 .reply{border-left:3px solid var(--line);padding-left:10px}
+button.heart{background:none;border-color:var(--line);color:var(--muted);font-weight:700}
+button.heart.on{color:#d9334a;border-color:#d9334a66;background:#d9334a12}
 .commit{font-size:.92rem;border:1px dashed var(--line);border-radius:10px;padding:8px 10px}
 details summary{cursor:pointer;font-weight:700;font-family:var(--display)}
 details ol,details ul{margin:.4em 0;padding-left:1.3em}
@@ -415,6 +417,10 @@ const CATS={H:{name:'Heart',v:'--H'},M:{name:'Mind',v:'--M'},B:{name:'Body',v:'-
 const KEYS=['H','M','B','P','T'];
 const SITE_URL='https://bettermegame.com/play.html';
 const MAXP=8;
+/* Cards left out of online play for now (they need everyone in one room at the same moment).
+   Players who hearted one of these still get it. The list lives in removed-cards.md. */
+const OFFLINE={M:[0,1,4,10,11,32,33,34,35,36,37,38,39,40,41,42],B:[4,29],H:[3,4],P:[1,5]};
+const cardId=(c,i)=>c+i;
 const col=c=>`var(${CATS[c].v})`;
 const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const $=s=>document.querySelector(s);
@@ -422,7 +428,7 @@ const JOINABLE=/all players|any player|everyone at the table|other players|each 
 const APART=/close (your|their) eyes|one minute|1 minute|write down|at the table|smile at the other|clockwise|every player|show the group/i;
 
 let fs=null,me=null,myName='';
-let gid=null,game=null,myGames=[],posts=[],sugg=[];
+let gid=null,game=null,myGames=[],posts=[],sugg=[],cardStats={};
 let unGame=null,unPosts=null,busy=false,ui={joinOpen:null,commitOpen:false,pts:1,msg:'',suggOpen:false,editName:false};
 
 function lsGet(k){try{return localStorage.getItem(k)||''}catch(e){return ''}}
@@ -434,6 +440,8 @@ function nm(id,g){return id===me?'You':nameOf(id,g)}
 function scores(list){
   const s={};(game?game.players:[]).forEach(p=>s[p]={H:0,M:0,B:0,P:0,T:0});
   (list||posts).forEach(x=>{if(s[x.by]&&x.cat&&x.pts>0)s[x.by][x.cat]+=x.pts});
+  /* Points beyond the target don't count: a full category is simply full. */
+  const t=game?game.target:3;Object.values(s).forEach(o=>KEYS.forEach(k=>{o[k]=Math.min(o[k],t)}));
   return s;
 }
 function fulfilledCount(sc){return KEYS.filter(k=>sc[k]>=game.target).length}
@@ -451,6 +459,7 @@ async function boot(){
   myName=lsGet('bm_name');
   window.addEventListener('hashchange',route);
   fs.collection('games').where('players','array-contains',me).onSnapshot(s=>{myGames=s.docs.map(d=>Object.assign({id:d.id},d.data()));render()},()=>{});
+  fs.collection('cards').onSnapshot(s=>{const o={};s.docs.forEach(d=>o[d.id]=d.data());cardStats=o;render()},()=>{});
   fs.collection('suggestions').orderBy('at','desc').limit(200).onSnapshot(s=>{sugg=s.docs.map(d=>Object.assign({id:d.id},d.data()));render()},()=>{});
   route();
 }
@@ -498,9 +507,20 @@ async function removePlayer(id){
   if(game.host!==me||id===me||game.status!=='lobby')return;
   await G().update({players:game.players.filter(p=>p!==id)});
 }
+function hearts(c,i){const s=cardStats[cardId(c,i)];return (s&&s.hearts)||[]}
+function iHeart(c,i){return hearts(c,i).includes(me)}
+function inMyDeck(c,i){return !(OFFLINE[c]||[]).includes(i)||iHeart(c,i)}
+async function toggleHeart(c,i){
+  const FV=firebase.firestore.FieldValue;
+  await fs.collection('cards').doc(cardId(c,i)).set({hearts:iHeart(c,i)?FV.arrayRemove(me):FV.arrayUnion(me)},{merge:true});
+}
+function heartBtn(c,i){
+  if(c==null||i==null)return '';const n=hearts(c,i).length;const on=iHeart(c,i);
+  return `<button class="small heart ${on?'on':''}" data-act="heart" data-arg="${c}:${i}" aria-pressed="${on}" title="${on?'You love this card':'Love this card'}">${on?'♥':'♡'} ${n}</button>`;
+}
 function pickIdx(cat){
   const used=new Set(posts.filter(p=>p.cat===cat&&p.idx!=null).map(p=>p.idx));
-  const all=DECKS[cat].map((_,i)=>i);let free=all.filter(i=>!used.has(i));if(!free.length)free=all;
+  const all=DECKS[cat].map((_,i)=>i).filter(i=>inMyDeck(cat,i));let free=all.filter(i=>!used.has(i));if(!free.length)free=all;
   return free[Math.floor(Math.random()*free.length)];
 }
 async function spin(){
@@ -511,7 +531,7 @@ async function spin(){
 }
 async function choose(cat){
   const p=game.pending;if(!myTurn()||!p||!p.choose)return;
-  await G().update({pending:{cat,idx:pickIdx(cat),bonus:!!p.bonus}});
+  await G().update({pending:{cat,idx:pickIdx(cat)}});
 }
 async function playSaved(i){
   if(!myTurn()||game.pending)return;
@@ -532,13 +552,12 @@ function readCommit(){
 }
 async function postAnswer(){
   const p=game.pending;if(!myTurn()||!p||p.choose)return;
-  const post={by:me,cat:p.cat,idx:p.idx,text:((($('#ans')||{}).value)||'').trim().slice(0,4000),pts:ui.pts,kind:p.bonus?'bonus':'turn',at:Date.now()};
+  const post={by:me,cat:p.cat,idx:p.idx,text:((($('#ans')||{}).value)||'').trim().slice(0,4000),pts:ui.pts,kind:'turn',at:Date.now()};
   const c=readCommit();if(c===false)return;if(c)post.commit=c;
   await POSTS().add(post);
   const r=checkEnd(posts.concat(post));
-  if(r.winners.length)await G().update({status:'over',winner:r.winners[0],firsts:r.firsts,pending:null,lastMoveAt:Date.now()});
-  else if(r.newly.some(n=>n.p===me)&&!p.bonus)await G().update({firsts:r.firsts,pending:{choose:true,bonus:true}});
-  else await G().update(Object.assign({firsts:r.firsts},nextTurnPatch()));
+  if(r.winners.length)await G().update({status:'over',winner:r.winners[0],pending:null,lastMoveAt:Date.now()});
+  else await G().update(nextTurnPatch());
   ui.pts=1;ui.commitOpen=false;
 }
 async function passCard(){
@@ -559,8 +578,7 @@ async function joinIn(parentId){
   const post={by:me,cat:parent.cat,idx:parent.idx,text:text.slice(0,4000),pts,kind:'join',parent:parentId,at:Date.now()};
   await POSTS().add(post);
   const r=checkEnd(posts.concat(post));
-  if(r.winners.length)await G().update({status:'over',winner:r.winners[0],firsts:r.firsts,pending:null});
-  else if(r.newly.length)await G().update({firsts:r.firsts});
+  if(r.winners.length)await G().update({status:'over',winner:r.winners[0],pending:null});
   ui.joinOpen=null;
 }
 async function markDone(postId){
@@ -569,7 +587,7 @@ async function markDone(postId){
   const kept={by:me,cat:p.cat,idx:null,text:p.commit.text,pts:1,kind:'kept',parent:postId,at:Date.now()};
   await POSTS().add(kept);
   const r=checkEnd(posts.concat(kept));
-  if(r.winners.length)await G().update({status:'over',winner:r.winners[0],firsts:r.firsts,pending:null});
+  if(r.winners.length)await G().update({status:'over',winner:r.winners[0],pending:null});
 }
 async function skipTurn(){if(!game||game.host!==me||game.status!=='playing')return;await G().update(nextTurnPatch())}
 async function endNow(){
@@ -644,7 +662,7 @@ function lobby(){
   <div class="row"><input id="roomlink" readonly value="${esc(link)}" style="flex:1;min-width:200px"><button class="small" data-act="copylink">Copy link</button></div>
   <div class="players">${game.players.map(p=>`<div class="pl"><div class="spread"><div class="who"><span>${esc(nm(p))}</span>${p===game.host?'<span class="tag">Host</span>':''}</div>${game.host===me&&p!==me?`<button class="small" data-act="remove" data-arg="${esc(p)}">Remove</button>`:''}</div></div>`).join('')}</div>
   <div class="row">${inGame?'':(game.players.length<MAXP?`<button class="primary big" data-act="join">Join this game</button>`:'<span class="muted">This game is full.</span>')}
-  ${game.host===me?`<div class="field" style="max-width:220px"><label for="target">Points per category to win</label><select id="target"><option value="2">2 (quick game)</option><option value="3">3 (classic length)</option></select></div>
+  ${game.host===me?`<div class="field" style="max-width:220px"><label for="target">Points per category to win</label><select id="target"><option value="1">1 (short, about 5 turns each)</option><option value="2" selected>2 (medium)</option><option value="3">3 (long, classic)</option></select></div>
   <button class="primary" data-act="start" ${game.players.length<2?'disabled':''}>Start the game</button>`:(inGame?'<span class="muted">The host starts the game when everyone’s in.</span>':'')}</div>
   ${game.host===me&&game.players.length<2?'<p class="small muted">You need at least one more player to start.</p>':''}</section>`;
 }
@@ -653,7 +671,7 @@ function scoreboard(){
   const head=game.status==='over'?`<h2>${esc(nm(game.winner))} ${game.winner===me?'win':'wins'}! Everyone give ${game.winner===me?'yourself':'them'} a compliment.</h2>`:`<h2>Race to ${game.target} in every category</h2>`;
   return `<section class="panel">${head}<div class="players">${game.players.map(p=>{const s=sc[p];const up=p===cur&&game.status==='playing';
     return `<div class="pl ${up?'cur':''}"><div class="spread"><div class="who"><span>${esc(nm(p))}</span></div>${up?'<span class="tag">Up now</span>':''}</div>
-    <div class="cats">${KEYS.map(k=>`<span class="cat" style="color:${col(k)}" title="${CATS[k].name}: ${s[k]}"><span>${CATS[k].name[0]}</span><span class="pips">${Array.from({length:game.target},(_,i)=>`<span class="pip ${s[k]>i?'on':''}"></span>`).join('')}</span>${s[k]>game.target?`<span class="small">+${s[k]-game.target}</span>`:''}</span>`).join('')}</div>
+    <div class="cats">${KEYS.map(k=>`<span class="cat" style="color:${col(k)}" title="${CATS[k].name}: ${s[k]}"><span>${CATS[k].name[0]}</span><span class="pips">${Array.from({length:game.target},(_,i)=>`<span class="pip ${s[k]>i?'on':''}"></span>`).join('')}</span></span>`).join('')}</div>
     <div class="fulfilled">${fulfilledCount(s)} of 5 fulfilled</div></div>`}).join('')}</div></section>`;
 }
 function cardBox(cat,idx,extra){
@@ -679,10 +697,11 @@ function turnPanel(){
     ${saved.length?`<div class="field"><label>Or play a card you saved</label><div class="row">${saved.map((c,i)=>`<button class="small" data-act="playsaved" data-arg="${i}" style="border-color:${col(c.cat)}">${CATS[c.cat].name} card</button>`).join('')}</div></div>`:''}</section>`;
   }
   if(p.choose){
-    const title=p.bonus?'Bonus card! You were first to fulfill a category. Pick any category.':`You spun ${CATS[p.from].name}, which you’ve already fulfilled. It’s wild: pick any category.`;
+    const title=`You spun ${CATS[p.from].name}, which you’ve already fulfilled. It’s wild: pick any category.`;
     return `<section class="panel"><h2>${title}</h2><div class="catpick">${KEYS.map(k=>`<button data-act="choose" data-arg="${k}" style="background:${col(k)}">${CATS[k].name}</button>`).join('')}</div></section>`;
   }
-  return `<section class="panel"><h2>${p.bonus?'Your bonus card':'Your card'}</h2>${cardBox(p.cat,p.idx,p.bonus?'<span>Bonus</span>':'')}
+  return `<section class="panel"><h2>Your card</h2>${cardBox(p.cat,p.idx)}
+  <div class="row small muted">${heartBtn(p.cat,p.idx)}<span>Tap the heart if this card helped you or you love it. Hearted cards always stay in your deck.</span></div>
   <div class="field"><label for="ans">Your answer (type it, or use your phone’s mic key)</label><textarea id="ans" rows="4" placeholder="Share as much or as little as you like."></textarea></div>
   <div class="field"><label>Points the card gives you</label><div class="stepper"><button class="small" data-act="pts" data-arg="-1" aria-label="One less point">−</button><span class="n">${ui.pts}</span><button class="small" data-act="pts" data-arg="1" aria-label="One more point">+</button><span class="small muted">in ${CATS[p.cat].name}</span></div></div>
   <label class="row" style="color:var(--fg)"><input type="checkbox" id="c_on" style="width:auto" ${ui.commitOpen?'checked':''} data-act="commit"> I’m making a commitment</label>
@@ -710,7 +729,7 @@ function postLine(p){
   if(p.kind==='kept')return `<div class="post"><div class="meta"><b>${esc(nm(p.by))}</b> kept a commitment ${chip}<span>+1</span><span>${when}</span></div><div class="answer">${esc(p.text)}</div></div>`;
   const t=cardText(p.cat,p.idx);const reps=posts.filter(r=>r.kind==='join'&&r.parent===p.id);
   const canJoin=game.players.includes(me)&&p.by!==me&&!reps.some(r=>r.by===me)&&JOINABLE.test(t)&&game.status==='playing';
-  return `<div class="post"><div class="meta"><b>${esc(nm(p.by))}</b>${p.kind==='bonus'?' (bonus card)':''} ${chip}<span>+${p.pts}</span><span>${when}</span></div>
+  return `<div class="post"><div class="meta"><b>${esc(nm(p.by))}</b>${p.kind==='bonus'?' (bonus card)':''} ${chip}<span>+${p.pts}</span><span>${when}</span>${heartBtn(p.cat,p.idx)}</div>
   <details class="qline"><summary class="small" style="font-family:var(--body);font-weight:500">The card</summary>${esc(t)}</details>
   ${p.text?`<div class="answer">${esc(p.text)}</div>`:''}
   ${p.commit?`<div class="small muted">Committed: ${esc(p.commit.text)}</div>`:''}
@@ -730,7 +749,7 @@ function suggestBox(){
   <p class="small muted" style="margin:.4em 0">Ideas for the rules, a card, or this app. Everyone can see suggestions and tap "Me too" on ones they agree with.</p>
   <div class="field"><label for="s_topic">About</label><select id="s_topic" style="max-width:240px"><option>Rules</option><option>A card</option><option>The app</option><option>Other</option></select></div>
   ${p?`<label class="row" style="color:var(--fg)"><input type="checkbox" id="s_card" style="width:auto"> It’s about the ${CATS[p.cat].name} card I’m on now</label>`:''}
-  <div class="field"><label for="s_text">Your suggestion</label><textarea id="s_text" rows="3" placeholder="e.g. Make the bonus card optional, it slowed us down"></textarea></div>
+  <div class="field"><label for="s_text">Your suggestion</label><textarea id="s_text" rows="3" placeholder="e.g. A new card idea, or a rule that slowed us down"></textarea></div>
   <div class="row"><button class="primary small" data-act="suggest">Send suggestion</button></div>
   ${list.length?`<div class="feed" style="margin-top:8px">${list.map(s=>{const n=(s.plus||[]).length;const mine=(s.plus||[]).includes(me);
     return `<div class="post"><div class="meta"><b>${esc(s.by===me?'You':(s.name||'Player'))}</b><span>${esc(s.topic||'')}</span>${s.cat?`<span class="chip" style="background:${col(s.cat)}">${CATS[s.cat].name} card</span>`:''}<span>${new Date(s.at).toLocaleDateString(undefined,{month:'short',day:'numeric'})}</span></div>
@@ -744,7 +763,8 @@ function rulesBox(){
   <ol><li><b>Spin</b> to get a category: Heart, Mind, Body, People or Tangibles. Already fulfilled it? Then it’s wild: pick any.</li>
   <li><b>Answer the card</b> in writing (or with your phone’s mic key).</li>
   <li><b>Take the points</b> the card says. The turn passes to the next player.</li></ol>
-  <ul><li>Get the target points in all 5 categories to win. The first to fill a category draws a bonus card.</li>
+  <ul><li>Fill all 5 categories to the target (1, 2 or 3 points, the host picks) to win. Extra points in a full category don’t count.</li>
+  <li>Tap ♡ on any card that helped you. Hearts show which cards people love, and your hearted cards always stay in your deck.</li>
   <li>Cards that say "all players are welcome" can be joined by anyone for the same points.</li>
   <li>Commitments get a partner and a check-in date. Keep one and you earn +1 point.</li>
   <li>No pressure or criticism unless asked. You can always pass or save a card for later.</li>
@@ -776,7 +796,7 @@ document.addEventListener('click',e=>{
   const map={savename:saveName,new:newGame,join:joinGame,spin,pass:passCard,save:saveCard,post:postAnswer,skip:skipTurn,endnow:endNow,
     suggest:addSuggestion,plus:()=>plusOne(arg),remove:()=>removePlayer(arg),
     start:()=>startGame(+(($('#target')||{}).value||2)),choose:()=>choose(arg),playsaved:()=>playSaved(+arg),
-    joinpost:()=>joinIn(arg),done:()=>markDone(arg)};
+    joinpost:()=>joinIn(arg),done:()=>markDone(arg),heart:()=>{const [c,i]=arg.split(':');return toggleHeart(c,+i)}};
   if(map[a])act(map[a]);
 });
 boot();
