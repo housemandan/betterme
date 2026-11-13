@@ -72,6 +72,35 @@
             box-shadow: 0 6px 16px rgba(242, 169, 59, 0.4);
         }
 
+        .btn-play {
+            background: linear-gradient(135deg, #2ec4d6, #8f7ae8);
+            color: #fff;
+            font-size: 1.35rem;
+            padding: 1.15rem 3rem;
+            box-shadow: 0 6px 20px rgba(46, 196, 214, 0.35);
+            flex-basis: 100%;
+            max-width: 420px;
+            text-align: center;
+        }
+
+        .btn-play small {
+            display: block;
+            font-size: 0.85rem;
+            font-weight: 500;
+            opacity: 0.9;
+        }
+
+        .btn-play:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(46, 196, 214, 0.45);
+        }
+
+        .play-row {
+            display: flex;
+            justify-content: center;
+            margin-top: 1.5rem;
+        }
+
         .btn-gumroad {
             background: #2bb5c8;
             color: #082a33;
@@ -170,6 +199,9 @@
             <img src="logo.png" alt="Better Me Logo" class="logo">
         </div>
         <p>Games & Puzzles for Fun and Personal Growth</p>
+        <div class="play-row">
+            <a href="play.html" class="btn btn-play">Play Better Me Online, Free<small>With friends anywhere. No sign-up.</small></a>
+        </div>
         <div class="buttons">
             <a href="https://danodonnell.gumroad.com/l/BetterMe" class="btn btn-gumroad" target="_blank" rel="noopener">Better Me Game: Print &amp; Play</a>
             <a href="https://www.amazon.com/stores/BetterMeSomethingDifferent/page/96F7A36F-5D8B-4F3B-895D-AC1761DE5867" class="btn btn-amazon" target="_blank" rel="noopener">Shop Our Products on Amazon</a>
