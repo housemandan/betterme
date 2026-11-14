@@ -215,8 +215,8 @@ function route(){
   gid=next;game=null;posts=[];postsReady=false;seenFull=null;party=null;ui.joinOpen=null;ui.commitOpen=false;ui.pts=1;ui.msg='';
   if(unGame)unGame();if(unPosts)unPosts();unGame=unPosts=null;
   if(gid){
-    unGame=fs.collection('games').doc(gid).onSnapshot(s=>{game=s.exists?Object.assign({id:s.id},s.data()):false;render()},()=>{game=false;render()});
-    unPosts=fs.collection('games').doc(gid).collection('posts').orderBy('at','asc').onSnapshot(s=>{posts=s.docs.map(d=>Object.assign({id:d.id},d.data()));postsReady=true;render()},()=>{});
+    unGame=fs.collection('games').doc(gid).onSnapshot(s=>{game=s.exists?Object.assign({id:s.id},s.data()):false;render();maybeBot()},()=>{game=false;render()});
+    unPosts=fs.collection('games').doc(gid).collection('posts').orderBy('at','asc').onSnapshot(s=>{posts=s.docs.map(d=>Object.assign({id:d.id},d.data()));postsReady=true;render();maybeBot()},()=>{});
   }
   render();
 }
@@ -238,6 +238,50 @@ async function newGame(){
   const name=((($('#newname')||{}).value)||'').trim().slice(0,60)||(myName+'’s game');
   await fs.collection('games').doc(id).set({name,status:'lobby',players:[me],names:{[me]:myName},host:me,target:2,turn:0,pending:null,saved:{},firsts:{},winner:null,createdAt:Date.now(),lastMoveAt:Date.now()});
   openGame(id);
+}
+/* ---------- practice mode: computer players (simple scripts in the host's browser, no AI, no cost) ----------
+   Only shows for devices that opened play.html?practice=1 once (Dan's choice, for now). */
+const BOT_NAMES=['Robo Rae','Robo Max','Robo Kai'];
+const BOT_ANSWERS=['(Practice answer) I’d share a short story about this out loud.','(Practice answer) Good question. Here’s what comes to mind for me…',
+  '(Practice answer) I had to think about this one. My answer: a little of both.','(Practice answer) This reminds me of something from last year.'];
+const BOT_COMMITS=['Take a 10-minute walk every day this week','Write down three things I’m grateful for each night for 7 days',
+  'Send a thank-you message to an old friend','Drink a glass of water first thing every morning this week','Tidy my desk and keep it clear for a week'];
+if(/[?&]practice=1/.test(location.search))lsSet('bm_practice','1');
+const canPractice=()=>lsGet('bm_practice')==='1';
+const isBot=id=>typeof id==='string'&&id.startsWith('bot_');
+const pick=a=>a[Math.floor(Math.random()*a.length)];
+async function newPractice(){
+  const n=Math.max(1,Math.min(3,+(($('#botn')||{}).value||1))),target=Math.max(1,Math.min(3,+(($('#bott')||{}).value||1)));
+  const id=newId();const bots=BOT_NAMES.slice(0,n).map((_,i)=>'bot_'+(i+1));
+  await fs.collection('games').doc(id).set({name:'Practice: '+myName+' vs computer',status:'lobby',players:[me],names:{[me]:myName},host:me,target,turn:0,pending:null,saved:{},firsts:{},winner:null,createdAt:Date.now(),lastMoveAt:Date.now()});
+  const names={};bots.forEach((b,i)=>names['names.'+b]=BOT_NAMES[i]);
+  await fs.collection('games').doc(id).update(Object.assign({players:[me].concat(bots),practice:true,status:'playing',target,turn:0},names));
+  openGame(id);
+}
+let botBusy=false;
+function maybeBot(){
+  if(botBusy||!game||!game.practice||game.host!==me||game.status!=='playing'||!postsReady||!isBot(curPlayer()))return;
+  botBusy=true;setTimeout(()=>runBot().catch(e=>console.error(e)).finally(()=>{botBusy=false;maybeBot()}),1800);
+}
+async function runBot(){
+  const b=curPlayer();if(!game||!game.practice||game.status!=='playing'||!isBot(b))return;
+  const sc=scores()[b];let cat=pick(KEYS);
+  if(sc[cat]>=game.target){const open=KEYS.filter(k=>sc[k]<game.target);cat=open.length?pick(open):cat}
+  const idx=pickIdx(cat);const lim=ptsLimit(cat,idx);
+  const commit=lim.commit>0&&(lim.share===0||Math.random()<0.5);
+  const post={by:b,cat,idx,text:pick(BOT_ANSWERS),pts:lim.share+(commit?lim.commit:0),kind:'turn',at:Date.now()};
+  if(commit){const d=new Date();d.setDate(d.getDate()+7);post.commit={text:pick(BOT_COMMITS),partner:me,due:d.toISOString().slice(0,10),done:false}}
+  await POSTS().add(post);
+  const r=checkEnd(posts.concat(post));
+  if(r.winners.length)await G().update({status:'over',winner:r.winners[0],pending:null,lastMoveAt:Date.now()});
+  else await G().update(nextTurnPatch());
+}
+function practiceBox(){
+  if(!canPractice())return '';
+  return `<section class="panel"><h2>Practice game</h2><p class="muted">Play against computer players to see how everything works. They take their turns by themselves. Nothing here costs anything.</p>
+  <div class="row"><div class="field" style="max-width:200px"><label for="botn">Computer players</label><select id="botn"><option value="1">1</option><option value="2">2</option><option value="3">3</option></select></div>
+  <div class="field" style="max-width:220px"><label for="bott">Points per category</label><select id="bott"><option value="1">1 (short)</option><option value="2">2 (medium)</option><option value="3">3 (long)</option></select></div>
+  <button class="primary" data-act="practice" style="align-self:flex-end">Start practice game</button></div></section>`;
 }
 async function joinGame(){
   if(!game||game.status!=='lobby'||game.players.includes(me)||game.players.length>=MAXP)return;
@@ -378,7 +422,7 @@ function view(){
   const msg=ui.msg?`<div class="note warn">${esc(ui.msg)}</div>`:'';
   if(!myName||ui.editName)return msg+nameBox();
   const who=`<div class="spread small muted"><span>Playing as <b style="color:var(--fg)">${esc(myName)}</b></span><button class="link" data-act="editname">Change name</button></div>`;
-  if(!gid)return msg+who+home()+suggestBox()+rulesBox();
+  if(!gid)return msg+who+home()+practiceBox()+suggestBox()+rulesBox();
   if(game===null)return msg+`<section class="panel"><p class="muted">Loading the game…</p></section>`;
   if(game===false)return msg+`<section class="panel"><h2>Game not found</h2><p class="muted">Check the link, or ask your friend to send it again.</p><div class="row"><button data-act="home">My games</button></div></section>`;
   const bar=`<div class="spread"><button class="link" data-act="home">← My games</button><h2>${esc(game.name||'Game')}</h2></div>`;
@@ -445,7 +489,7 @@ function scoreboard(){
   const sc=scores();const cur=curPlayer();
   const head=game.status==='over'?`<h2>${esc(nm(game.winner))} ${game.winner===me?'win':'wins'}! Everyone give ${game.winner===me?'yourself':'them'} a compliment.</h2>`:`<h2>Race to ${game.target} in every category</h2>`;
   return `<section class="panel">${head}<div class="players">${game.players.map(p=>{const s=sc[p];const up=p===cur&&game.status==='playing';
-    return `<div class="pl ${up?'cur':''}"><div class="spread"><div class="who"><span>${esc(nm(p))}</span></div>${up?'<span class="tag">Up now</span>':''}</div>
+    return `<div class="pl ${up?'cur':''}"><div class="spread"><div class="who"><span>${esc(nm(p))}</span>${isBot(p)?'<span class="small muted">(computer)</span>':''}</div>${up?'<span class="tag">Up now</span>':''}</div>
     <div class="cats">${KEYS.map(k=>`<span class="cat" style="color:${col(k)}" title="${CATS[k].name}: ${s[k]}"><span>${CATS[k].name[0]}</span>${s[k]>=game.target?`<span class="gem" style="--c:${col(k)}" aria-label="fulfilled"></span>`:`<span class="pips">${Array.from({length:game.target},(_,i)=>`<span class="pip ${s[k]>i?'on':''}"></span>`).join('')}</span>`}</span>`).join('')}</div>
     <div class="fulfilled">${fulfilledCount(s)} of 5 fulfilled</div></div>`}).join('')}</div></section>`;
 }
@@ -458,6 +502,7 @@ function turnPanel(){
   if(game.status==='over')return `<section class="panel"><h2>Game over</h2><p class="muted">Keep checking off your commitments below. Start a new game any time from "My games".</p></section>`;
   const cur=curPlayer();
   if(!game.players.includes(me))return `<section class="panel"><h2>${esc(nm(cur))} is up</h2><p class="muted">This game already started, so you’re watching. Ask a friend to start a new one with you.</p></section>`;
+  if(!myTurn()&&isBot(cur))return `<section class="panel"><h2>${esc(nm(cur))} is taking a turn…</h2><p class="muted">Computer players move by themselves in a couple of seconds.</p></section>`;
   if(!myTurn()){
     const days=game.lastMoveAt?Math.max(0,Math.floor((Date.now()-game.lastMoveAt)/86400000)):0;
     return `<section class="panel"><h2>Waiting for ${esc(nm(cur))}</h2>
@@ -652,7 +697,7 @@ document.addEventListener('click',e=>{
   if(a==='copylink'){copyText(SITE_URL+'#'+gid,'Link copied. Paste it into WhatsApp, Messenger or LINE.','roomlink');return}
   if(a==='nudge'){copyText(`${nameOf(curPlayer())}, it’s your turn in Better Me (${game.name||'our game'})! ${SITE_URL}#${gid}`,'Copied. Paste it into WhatsApp, Messenger, LINE or a text.','');return}
   const map={savename:saveName,new:newGame,join:joinGame,spin,pass:passCard,save:saveCard,post:postAnswer,skip:skipTurn,endnow:endNow,
-    suggest:addSuggestion,plus:()=>plusOne(arg),remove:()=>removePlayer(arg),
+    suggest:addSuggestion,practice:newPractice,plus:()=>plusOne(arg),remove:()=>removePlayer(arg),
     start:()=>startGame(+(($('#target')||{}).value||2)),choose:()=>choose(arg),playsaved:()=>playSaved(+arg),
     joinpost:()=>joinIn(arg),done:()=>markDone(arg),note:()=>addNote(arg),asknote:()=>{const p=posts.find(x=>x.id===arg);return addNote(arg,p?`How’s it going with: ${p.commit.text}?`:'')},heart:()=>{const [c,i]=arg.split(':');return toggleHeart(c,+i)}};
   if(map[a])act(map[a]);
