@@ -69,6 +69,10 @@ input,textarea,select{font:inherit;color:var(--fg);background:var(--bg);border:1
 textarea{resize:vertical}
 label{font-size:.88rem;font-weight:700;color:var(--muted)}
 .field{display:flex;flex-direction:column;gap:4px}
+.field.missing input,.field.missing select,.field.missing textarea{border-color:#e0605a;box-shadow:0 0 0 3px rgba(224,96,90,.25);animation:nudge .35s ease 2}
+.field.missing label{color:#e0605a;font-weight:700}
+.missmsg{color:#e0605a;font-size:.85rem;font-weight:600}
+@keyframes nudge{0%,100%{transform:translateX(0)}25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
 .muted{color:var(--muted)}
 .small{font-size:.88rem}
 .note{background:var(--surface2);border-radius:12px;padding:10px 12px;font-size:.95rem}
