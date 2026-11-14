@@ -104,6 +104,22 @@ label{font-size:.88rem;font-weight:700;color:var(--muted)}
 button.heart{background:none;border-color:var(--line);color:var(--muted);font-weight:700}
 button.heart.on{color:#d9334a;border-color:#d9334a66;background:#d9334a12}
 .commit{font-size:.92rem;border:1px dashed var(--line);border-radius:10px;padding:8px 10px}
+/* Gem = a fulfilled category. Celebration = a short pop-up with falling sparkles. */
+.gem{display:inline-block;width:13px;height:13px;margin:0 3px;transform:rotate(45deg);border-radius:3px;
+  background:linear-gradient(135deg,#fff 0%,color-mix(in srgb,var(--c) 55%,#fff) 30%,var(--c) 60%,color-mix(in srgb,var(--c) 70%,#000) 100%);
+  box-shadow:0 0 6px color-mix(in srgb,var(--c) 60%,transparent)}
+.gem.big{width:22px;height:22px;margin:0 6px;flex:none}
+.party{position:fixed;inset:0;z-index:50;pointer-events:none;display:flex;align-items:flex-start;justify-content:center;padding-top:90px}
+.partybox{pointer-events:auto;background:var(--surface);color:var(--fg);border:2px solid var(--lav);border-radius:18px;padding:16px 20px;
+  box-shadow:0 12px 40px #1e183855;display:flex;flex-direction:column;gap:10px;align-items:center;max-width:min(92vw,420px);text-align:center;font-size:1.15rem}
+.partyline{display:flex;align-items:center;gap:6px}
+.party i{position:absolute;top:-20px;left:var(--x);width:9px;height:9px;transform:rotate(45deg);background:var(--c);opacity:0}
+@media (prefers-reduced-motion:no-preference){
+  .partybox{animation:partypop .5s cubic-bezier(.2,1.6,.4,1)}
+  @keyframes partypop{from{transform:scale(.6);opacity:0}to{transform:none;opacity:1}}
+  .party i{animation:sparkle 2.6s ease-in var(--d) forwards}
+  @keyframes sparkle{0%{opacity:1;transform:translateY(0) rotate(45deg)}100%{opacity:0;transform:translateY(85vh) rotate(405deg)}}
+}
 @media print{
   body.printsheet .sky,body.printsheet #main>*:not(#sheet),body.printsheet .noprint,body.printsheet #sheet .row{display:none!important}
   body.printsheet{background:#fff;color:#000}
@@ -157,6 +173,7 @@ const APART=/close (your|their) eyes|one minute|1 minute|write down|at the table
 
 let fs=null,me=null,myName='';
 let gid=null,game=null,myGames=[],posts=[],sugg=[],cardStats={};
+let postsReady=false;
 let unGame=null,unPosts=null,busy=false,ui={joinOpen:null,commitOpen:false,pts:1,msg:'',suggOpen:false,editName:false};
 
 function lsGet(k){try{return localStorage.getItem(k)||''}catch(e){return ''}}
@@ -195,11 +212,11 @@ function route(){
   const h=(location.hash||'').replace(/^#/,'');
   const next=/^[a-z0-9]{8,20}$/.test(h)?h:null;
   if(next===gid&&(unGame||!next)){render();return}
-  gid=next;game=null;posts=[];ui.joinOpen=null;ui.commitOpen=false;ui.pts=1;ui.msg='';
+  gid=next;game=null;posts=[];postsReady=false;seenFull=null;party=null;ui.joinOpen=null;ui.commitOpen=false;ui.pts=1;ui.msg='';
   if(unGame)unGame();if(unPosts)unPosts();unGame=unPosts=null;
   if(gid){
     unGame=fs.collection('games').doc(gid).onSnapshot(s=>{game=s.exists?Object.assign({id:s.id},s.data()):false;render()},()=>{game=false;render()});
-    unPosts=fs.collection('games').doc(gid).collection('posts').orderBy('at','asc').onSnapshot(s=>{posts=s.docs.map(d=>Object.assign({id:d.id},d.data()));render()},()=>{});
+    unPosts=fs.collection('games').doc(gid).collection('posts').orderBy('at','asc').onSnapshot(s=>{posts=s.docs.map(d=>Object.assign({id:d.id},d.data()));postsReady=true;render()},()=>{});
   }
   render();
 }
@@ -366,8 +383,29 @@ function view(){
   if(game===false)return msg+`<section class="panel"><h2>Game not found</h2><p class="muted">Check the link, or ask your friend to send it again.</p><div class="row"><button data-act="home">My games</button></div></section>`;
   const bar=`<div class="spread"><button class="link" data-act="home">← My games</button><h2>${esc(game.name||'Game')}</h2></div>`;
   if(game.status==='lobby')return msg+who+bar+lobby()+rulesBox()+suggestBox();
-  if(game.status==='over')return msg+who+bar+commitsPanel()+scoreboard()+feed()+suggestBox()+rulesBox();
-  return msg+who+bar+scoreboard()+turnPanel()+commitsPanel()+feed()+suggestBox()+rulesBox()+hostBox();
+  const party=celebration();
+  if(game.status==='over')return party+msg+who+bar+commitsPanel()+scoreboard()+feed()+suggestBox()+rulesBox();
+  return party+msg+who+bar+scoreboard()+turnPanel()+commitsPanel()+feed()+suggestBox()+rulesBox()+hostBox();
+}
+/* When someone fills a category: a gem appears on the scoreboard and everyone watching sees a short celebration.
+   Only fires for fills that happen while the page is open (not for old ones when you first load the game). */
+let seenFull=null,party=null,partyTimer=null;
+function fullSet(){const sc=scores();const o=new Set();game.players.forEach(p=>KEYS.forEach(k=>{if(sc[p][k]>=game.target)o.add(p+'|'+k)}));return o}
+function celebration(){
+  if(!postsReady)return '';
+  const now=fullSet();
+  if(seenFull&&seenFull.gid===gid){
+    const fresh=[...now].filter(x=>!seenFull.set.has(x)).map(x=>{const [p,k]=x.split('|');return {p,k}});
+    if(fresh.length){
+      party={items:fresh,at:Date.now()};
+      clearTimeout(partyTimer);partyTimer=setTimeout(()=>{party=null;render()},6000);
+    }
+  }
+  seenFull={gid,set:now};
+  if(!party)return '';
+  const lines=party.items.map(({p,k})=>`<div class="partyline"><span class="gem big" style="--c:${col(k)}"></span><span><b>${esc(p===me?'You':nameOf(p))}</b> fulfilled <b style="color:${col(k)}">${CATS[k].name}</b>!</span></div>`).join('');
+  return `<div class="party" role="status" aria-live="polite">${Array.from({length:18},(_,i)=>`<i style="--x:${(i*37)%100}%;--d:${(i%6)*0.12}s;--c:${col(KEYS[i%5])}"></i>`).join('')}
+    <div class="partybox">${lines}<button class="small" data-act="partyclose">Yay!</button></div></div>`;
 }
 function nameBox(){
   return `<section class="panel"><h2>${myName?'Change your name':'Welcome! What’s your first name?'}</h2>
@@ -408,7 +446,7 @@ function scoreboard(){
   const head=game.status==='over'?`<h2>${esc(nm(game.winner))} ${game.winner===me?'win':'wins'}! Everyone give ${game.winner===me?'yourself':'them'} a compliment.</h2>`:`<h2>Race to ${game.target} in every category</h2>`;
   return `<section class="panel">${head}<div class="players">${game.players.map(p=>{const s=sc[p];const up=p===cur&&game.status==='playing';
     return `<div class="pl ${up?'cur':''}"><div class="spread"><div class="who"><span>${esc(nm(p))}</span></div>${up?'<span class="tag">Up now</span>':''}</div>
-    <div class="cats">${KEYS.map(k=>`<span class="cat" style="color:${col(k)}" title="${CATS[k].name}: ${s[k]}"><span>${CATS[k].name[0]}</span><span class="pips">${Array.from({length:game.target},(_,i)=>`<span class="pip ${s[k]>i?'on':''}"></span>`).join('')}</span></span>`).join('')}</div>
+    <div class="cats">${KEYS.map(k=>`<span class="cat" style="color:${col(k)}" title="${CATS[k].name}: ${s[k]}"><span>${CATS[k].name[0]}</span>${s[k]>=game.target?`<span class="gem" style="--c:${col(k)}" aria-label="fulfilled"></span>`:`<span class="pips">${Array.from({length:game.target},(_,i)=>`<span class="pip ${s[k]>i?'on':''}"></span>`).join('')}</span>`}</span>`).join('')}</div>
     <div class="fulfilled">${fulfilledCount(s)} of 5 fulfilled</div></div>`}).join('')}</div></section>`;
 }
 function cardBox(cat,idx,extra){
@@ -604,6 +642,7 @@ document.addEventListener('click',e=>{
   if(a==='joinopen'){ui.joinOpen=arg;render();return}
   if(a==='joinclose'){ui.joinOpen=null;render();return}
   if(a==='editname'){ui.editName=true;render();return}
+  if(a==='partyclose'){party=null;clearTimeout(partyTimer);render();return}
   if(a==='sheetcopy'){copyText(sheetText(),'Game sheet copied. Paste it into notes, a message or an email.','');return}
   if(a==='sheetmail'){location.href='mailto:?subject='+encodeURIComponent('My Better Me game sheet')+'&body='+encodeURIComponent(sheetText());return}
   if(a==='sheetprint'){document.body.classList.add('printsheet');window.print();setTimeout(()=>document.body.classList.remove('printsheet'),500);return}
