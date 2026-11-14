@@ -293,7 +293,9 @@ function stopChat(){if(unChat)unChat();unChat=null;chat=[];ui.chatOpen=false;ren
 function syncChat(){
   if(!chatOK()){if(unChat)stopChat();else renderChat();return}
   if(!unChat)unChat=fs.collection('games').doc(gid).collection('chat').orderBy('at','asc').limitToLast(200)
-    .onSnapshot(s=>{chat=s.docs.map(d=>Object.assign({id:d.id},d.data()));if(ui.chatOpen)chatMarkRead();renderChat()},e=>console.error(e));
+    .onSnapshot(s=>{chat=s.docs.map(d=>Object.assign({id:d.id},d.data()));if(ui.chatOpen)chatMarkRead();renderChat()},
+      /* Right after joining, the server may not know you're a player yet: wait a moment and try again. */
+      e=>{console.warn('chat retry',e&&e.code);unChat=null;const g=gid;setTimeout(()=>{if(gid===g)syncChat()},3000)});
   renderChat();
 }
 function chatReadAt(){return Number(lsGet('bm_chatread_'+gid))||0}
