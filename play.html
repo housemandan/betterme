@@ -204,6 +204,41 @@ details ol,details ul{margin:.4em 0;padding-left:1.3em}
 .recdot{width:12px;height:12px;border-radius:50%;background:#e0605a;flex:none}
 @media (prefers-reduced-motion:no-preference){.recdot{animation:recpulse 1s ease-in-out infinite}@keyframes recpulse{50%{opacity:.3}}}
 @media print{#chatdock{display:none}}
+/* Voice player bar (top of screen) and photos. */
+#vpbar{position:fixed;left:0;right:0;top:0;z-index:60;display:flex;justify-content:center;padding:8px 12px;pointer-events:none}
+.vpin{pointer-events:auto;width:100%;max-width:620px;background:var(--surface);color:var(--fg);border:1px solid var(--line);border-radius:14px;box-shadow:0 6px 20px rgba(30,24,56,.25);padding:8px 12px;display:grid;gap:6px}
+.vphead{display:flex;align-items:center;gap:8px;font-size:.9rem}
+.vphead b{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.vpx{font-size:1.1rem;text-decoration:none!important}
+.vpctl{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.vpctl button{padding:5px 10px}
+#vprange{flex:1;min-width:120px;width:auto;margin:0;padding:0;border:0;background:none;accent-color:var(--lav);height:28px}
+.vptime{white-space:nowrap;font-variant-numeric:tabular-nums;color:var(--muted)}
+.photorow{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:6px}
+.photorow .muted{font-size:.8rem}
+.phedit{position:relative;line-height:0}
+.phedit img{width:56px;height:56px;object-fit:cover;border-radius:8px;display:block}
+.phedit button{position:absolute;top:-7px;right:-7px;width:22px;height:22px;line-height:22px;text-align:center;border-radius:50%!important;background:var(--surface)!important;color:var(--fg)!important;text-decoration:none!important;box-shadow:0 1px 4px #0004;font-size:.75rem}
+.phlist{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+button.phbtn{padding:0;border:0;background:none;border-radius:8px;overflow:hidden;line-height:0;cursor:zoom-in}
+.phbtn img{width:84px;height:84px;object-fit:cover;display:block}
+button.chatph{border-radius:12px}
+.chatph img{width:170px;height:auto;max-height:200px}
+#phbox{position:fixed;inset:0;z-index:70;display:flex;align-items:center;justify-content:center;padding:16px}
+.phshade{position:absolute;inset:0;background:rgba(20,16,40,.72)}
+.phcard{position:relative;background:var(--surface);color:var(--fg);border-radius:14px;padding:10px 12px 12px;max-width:min(94vw,900px);max-height:94vh;display:flex;flex-direction:column;gap:8px;overflow:auto}
+.phtop{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.phtop button{font-size:1.2rem;text-decoration:none}
+.phimg img{display:block;max-width:100%;max-height:74vh;border-radius:10px;margin:0 auto}
+.phacts{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;align-items:center}
+a.button{display:inline-block;font-weight:700;border-radius:999px;border:1px solid var(--line);background:var(--surface2);color:var(--fg);text-decoration:none}
+a.button.small{padding:5px 12px;font-size:.88rem}
+.phgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin:8px 0 12px}
+.phgrid figure{margin:0}
+.phwide{width:100%}
+.phwide img{width:100%;height:auto;max-height:none;object-fit:contain}
+.phgrid figcaption{font-size:.75rem;color:var(--muted);margin-top:2px}
+@media print{#vpbar,#phbox{display:none!important}body.printsheet .phgrid{grid-template-columns:repeat(3,1fr)}body.printsheet .phgrid figure{break-inside:avoid}}
 </style>
 </head>
 <body>
@@ -408,7 +443,7 @@ function applyVoice(){
     const row=document.createElement('div');row.className='sayrow small';
     row.innerHTML=rec?`<span class="recdot" aria-hidden="true"></span><b class="saytime">Recording ${fmtDur(recSecsV())} / 1:00</b><button type="button" class="small primary" data-say="stop" data-arg="${id}">Done</button><button type="button" class="small" data-say="cancel" data-arg="${id}">Cancel</button>`
       :v.busy?`<span>✍️ Typing out what you said…</span>`
-      :(v.clips&&v.clips.length)?`${v.clips.map((c,i)=>`<button type="button" class="link" data-say="play" data-arg="${c.id}">▶ ${v.clips.length>1?'Clip '+(i+1)+' ':''}(${fmtDur(c.dur)})</button>`).join('')}${v.clips.length<MAX_CLIPS?`<button type="button" class="small sayit" data-say="rec" data-arg="${id}">🎤 Add more</button>`:''}<button type="button" class="link" data-say="remove" data-arg="${id}">Remove voice</button>${v.note?`<span class="muted">${esc(v.note)}</span>`:''}`
+      :(v.clips&&v.clips.length)?`${v.clips.map((c,i)=>clipBtn(c,v.clips.length>1?'Clip '+(i+1):'Your clip','You','link')).join('')}${v.clips.length<MAX_CLIPS?`<button type="button" class="small sayit" data-say="rec" data-arg="${id}">🎤 Add more</button>`:''}<button type="button" class="link" data-say="remove" data-arg="${id}">Remove voice</button>${v.note?`<span class="muted">${esc(v.note)}</span>`:''}`
       :`<button type="button" class="small sayit" data-say="rec" data-arg="${id}">🎤 Say it</button><span class="muted">or type it</span>`;
     box.appendChild(row);
   });
@@ -448,31 +483,182 @@ async function sayRec(field){
   refreshVoice();
 }
 function sayStop(cancel){if(!vRec)return;vRec.cancel=!!cancel;try{vRec.mr.stop()}catch(e){}}
-/* Plays a saved voice clip from a post, the game sheet or an answer box (one at a time). */
-let clip=null;
-async function playClip(id,btn){
-  if(clip&&clip.id===id){clip.a.pause();clip=null;btn.textContent=btn.textContent.replace('⏸','▶');return}
-  if(clip){clip.a.pause();if(clip.btn)clip.btn.textContent=clip.btn.textContent.replace('⏸','▶');clip=null}
-  btn.textContent=btn.textContent.replace('▶','⏸');
+/* ---------- voice player (Dan, 2026-11-14) ----------
+   One bar pinned to the top of the screen (outside #main, so the page re-drawing never stops it).
+   A slider to jump anywhere, 10-second back and forward, and it remembers where each clip was stopped:
+   close it by accident, tap ▶ again, and it picks up from there. */
+let vp=null;
+function vpSaved(){try{return JSON.parse(lsGet('bm_vpos')||'{}')||{}}catch(e){return {}}}
+function vpRemember(id,t){const s=vpSaved();if(t>1)s[id]=Math.round(t);else delete s[id];const k=Object.keys(s);if(k.length>80)delete s[k[0]];lsSet('bm_vpos',JSON.stringify(s))}
+function vpAt(id){return vpSaved()[id]||0}
+async function audioData(id){let data=audioCache.get(id);if(!data){const d=await fs.collection('games').doc(gid).collection('audio').doc(id).get();data=d.exists?d.data().data:null;if(data)audioCache.set(id,data)}return data}
+function vpDur(){if(!vp)return 0;const d=vp.a.duration;return isFinite(d)&&d>0?d:vp.dur||0}
+async function vpOpen(id,dur,label){
+  if(vp&&vp.id===id){if(vp.err||vp.loading)return;if(vp.a.paused)vp.a.play().catch(()=>{});else vp.a.pause();return}
+  vpClose();
+  const a=new Audio();vp={id,a,dur:Number(dur)||0,label:label||'Voice clip',loading:true,drag:false,lastSave:0};vpRender();
   try{
-    let data=audioCache.get(id);
-    if(!data){const d=await fs.collection('games').doc(gid).collection('audio').doc(id).get();data=d.exists?d.data().data:null;if(data)audioCache.set(id,data)}
-    if(!data)throw new Error('missing');
-    const a=new Audio(data);clip={id,a,btn};a.onended=()=>{if(clip&&clip.id===id){btn.textContent=btn.textContent.replace('⏸','▶');clip=null}};await a.play();
-  }catch(e){console.error(e);btn.textContent=btn.textContent.replace('⏸','▶');clip=null}
+    const data=await audioData(id);if(!vp||vp.id!==id)return;if(!data)throw new Error('missing');
+    a.preload='auto';
+    await new Promise((ok,no)=>{a.onloadedmetadata=ok;a.onerror=()=>no(new Error('cannot play'));a.src=data});
+    /* Recordings made in Chrome don't say how long they are; this makes the browser work it out so the slider can jump. */
+    if(!isFinite(a.duration)){await new Promise(ok=>{let t;const done=()=>{if(!isFinite(a.duration))return;a.removeEventListener('durationchange',done);clearTimeout(t);ok()};a.addEventListener('durationchange',done);t=setTimeout(()=>{a.removeEventListener('durationchange',done);ok()},2000);a.currentTime=1e7})}
+    if(!vp||vp.id!==id)return;
+    const start=vpAt(id);a.currentTime=start&&start<vpDur()-1?start:0;
+    vp.loading=false;
+    a.ontimeupdate=vpTick;a.onplay=a.onpause=()=>{vpRender();syncVoiceBtns()};
+    a.onended=()=>{vpRemember(id,0);if(vp&&vp.id===id){vp.ended=true;vpRender();syncVoiceBtns()}};
+    vpRender();await a.play();
+  }catch(e){console.error(e);if(vp&&vp.id===id){vp.loading=false;vp.err=true;vpRender()}}
 }
+function vpClose(){
+  if(!vp)return;
+  if(!vp.loading&&!vp.err&&!vp.ended)vpRemember(vp.id,vp.a.currentTime);
+  try{vp.a.pause()}catch(e){}vp=null;vpRender();syncVoiceBtns();
+}
+function vpRender(){
+  let bar=$('#vpbar');
+  if(!vp){if(bar)bar.remove();return}
+  if(!bar){bar=document.createElement('div');bar.id='vpbar';bar.setAttribute('role','region');bar.setAttribute('aria-label','Voice player');document.body.appendChild(bar)}
+  const d=vpDur(),t=vp.loading||vp.err?0:vp.a.currentTime,playing=!vp.a.paused;
+  bar.innerHTML=`<div class="vpin"><div class="vphead"><b>🎤 ${esc(vp.label)}</b><button type="button" class="link vpx" data-vp="close" aria-label="Close player">✕</button></div>
+    ${vp.err?'<div class="small">That clip couldn’t play here. Try another browser.</div>':vp.loading?'<div class="small muted">Loading…</div>':
+    `<div class="vpctl"><button type="button" class="small" data-vp="back" aria-label="Back 10 seconds">↺ 10</button><button type="button" class="small primary" data-vp="toggle" aria-label="${playing?'Pause':'Play'}">${playing?'⏸':'▶'}</button><button type="button" class="small" data-vp="fwd" aria-label="Forward 10 seconds">10 ↻</button>
+    <input type="range" id="vprange" min="0" max="${d.toFixed(1)}" step="0.1" value="${Math.min(t,d).toFixed(1)}" aria-label="Drag to jump to any spot"><span class="vptime small">${fmtDur(t)} / ${fmtDur(d)}</span></div>`}</div>`;
+}
+function vpTick(){
+  if(!vp||vp.drag)return;const t=vp.a.currentTime,d=vpDur();
+  const r=$('#vprange'),s=document.querySelector('#vpbar .vptime');
+  if(r){r.max=d.toFixed(1);r.value=Math.min(t,d).toFixed(1)}if(s)s.textContent=fmtDur(t)+' / '+fmtDur(d);
+  if(Math.abs(t-vp.lastSave)>3){vp.lastSave=t;vpRemember(vp.id,t)}
+}
+document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('[data-vp]');if(!b||!vp)return;e.preventDefault();const a=vp.a,k=b.dataset.vp;
+  if(k==='close'){vpClose();return}
+  if(vp.loading||vp.err)return;
+  if(k==='toggle'){vp.ended=false;if(a.paused)a.play().catch(()=>{});else a.pause()}
+  if(k==='back')a.currentTime=Math.max(0,a.currentTime-10);
+  if(k==='fwd')a.currentTime=Math.min(Math.max(0,vpDur()-0.2),a.currentTime+10);
+  vpTick();});
+document.addEventListener('input',e=>{if(e.target&&e.target.id==='vprange'&&vp&&!vp.loading){vp.drag=true;vp.ended=false;vp.a.currentTime=Number(e.target.value);const s=document.querySelector('#vpbar .vptime');if(s)s.textContent=fmtDur(e.target.value)+' / '+fmtDur(vpDur())}});
+document.addEventListener('change',e=>{if(e.target&&e.target.id==='vprange'&&vp){vp.drag=false;vpRemember(vp.id,vp.a.currentTime)}});
+/* A ▶ button for one saved clip. Shows where you stopped last time, e.g. "▶ Listen (0:42 of 1:00)". */
+function clipText(id,dur,label){const at=vpAt(id),on=vp&&vp.id===id&&!vp.a.paused;dur=Number(dur)||0;
+  return `${on?'⏸':'▶'} ${label} (${at>1&&at<dur-1?fmtDur(at)+' of ':''}${fmtDur(dur)})`}
+function clipBtn(c,label,who,cls){return `<button type="button" class="${cls||'link voiceplay'}" data-say="play" data-arg="${esc(c.id)}" data-dur="${Math.round(c.dur||0)}" data-who="${esc(who||'')}" data-label="${esc(label)}">${esc(clipText(c.id,c.dur,label))}</button>`}
+function syncVoiceBtns(){document.querySelectorAll('[data-say="play"][data-label]').forEach(b=>{b.textContent=clipText(b.dataset.arg,b.dataset.dur,b.dataset.label)})}
 /* Saved posts keep a list of clips (older posts may hold a single {id,dur}). */
-function voiceTag(v){const a=Array.isArray(v)?v:(v&&v.id?[v]:[]);return a.map((c,i)=>` <button type="button" class="link voiceplay" data-say="play" data-arg="${esc(c.id)}">▶ Listen${a.length>1?' '+(i+1):''} (${fmtDur(c.dur)})</button>`).join('')}
+function voiceTag(v,who){const a=Array.isArray(v)?v:(v&&v.id?[v]:[]);return a.map((c,i)=>' '+clipBtn(c,'Listen'+(a.length>1?' '+(i+1):''),who)).join('')}
 function takeVoice(field){const v=ui.voice[field];return v&&v.clips&&v.clips.length?v.clips.map(c=>({id:c.id,dur:Math.round(c.dur||0)})):null}
-function clearVoice(...fields){if(vRec&&fields.includes(vRec.field))sayStop(true);fields.forEach(f=>delete ui.voice[f])}
+function clearVoice(...fields){if(vRec&&fields.includes(vRec.field))sayStop(true);fields.forEach(f=>{delete ui.voice[f];delete ui.photos[f]})}
 document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('[data-say]');if(!b)return;e.preventDefault();
   const a=b.dataset.say,arg=b.dataset.arg;
   if(a==='rec')sayRec(arg);
   if(a==='stop')sayStop(false);
   if(a==='cancel')sayStop(true);
   if(a==='remove'){delete ui.voice[arg];refreshVoice()}
-  if(a==='play')playClip(arg,b);
+  if(a==='play')vpOpen(arg,b.dataset.dur,b.dataset.who||'Voice clip');
 });
+
+/* ---------- photos (Dan, 2026-11-14) ----------
+   📷 next to answer, commitment and check-in boxes, and in the chat. Each photo is shrunk in the browser
+   (about 1280px, ~200 KB), which also strips hidden location data, then saved in games/{id}/photos.
+   The post keeps a tiny preview (~10 KB) so the feed stays fast; the full photo downloads only when someone
+   taps it, or for the game sheet once the game is over (and when printing). Each photo has expireAt
+   (1 year), so a Firestore clean-up rule can be switched on later if storage ever runs short. */
+const PHOTO_MAX=3;ui.photos={};const photoCache=new Map();let photoFor=null;
+function photoOK(){return !!(game&&gid&&game.players&&game.players.includes(me))}
+function okThumb(t){return typeof t==='string'&&t.length<80000&&/^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(t)}
+function loadImg(file){return new Promise((ok,no)=>{const u=URL.createObjectURL(file),i=new Image();i.onload=()=>ok(i);i.onerror=()=>{URL.revokeObjectURL(u);no(new Error('not an image'))};i.src=u})}
+function shrink(img,max,q){const w0=img.naturalWidth,h0=img.naturalHeight,k=Math.min(1,max/Math.max(w0,h0));const c=document.createElement('canvas');
+  c.width=Math.max(1,Math.round(w0*k));c.height=Math.max(1,Math.round(h0*k));const x=c.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,c.width,c.height);x.drawImage(img,0,0,c.width,c.height);
+  return {data:c.toDataURL('image/jpeg',q),w:c.width,h:c.height}}
+async function savePhoto(file){
+  const img=await loadImg(file);
+  let f=shrink(img,1280,0.8);if(f.data.length>420000)f=shrink(img,1024,0.7);if(f.data.length>420000)f=shrink(img,800,0.6);
+  const t=shrink(img,240,0.6).data;URL.revokeObjectURL(img.src);
+  const at=Date.now();
+  const ref=await fs.collection('games').doc(gid).collection('photos').add({by:me,data:f.data,w:f.w,h:f.h,at,expireAt:new Date(at+365*864e5)});
+  photoCache.set(ref.id,{data:f.data,by:me});
+  return {id:ref.id,t};
+}
+async function photoData(id){
+  if(photoCache.has(id))return photoCache.get(id);
+  const s=await fs.collection('games').doc(gid).collection('photos').doc(id).get();const v=s.exists?s.data():null;
+  const r={data:v&&typeof v.data==='string'&&/^data:image\//.test(v.data)?v.data:'',by:v&&v.by};photoCache.set(id,r);return r;
+}
+function pickPhoto(field){
+  let inp=$('#photoin');
+  if(!inp){inp=document.createElement('input');inp.type='file';inp.accept='image/*';inp.id='photoin';inp.hidden=true;inp.addEventListener('change',onPhotoPicked);document.body.appendChild(inp)}
+  photoFor=field;inp.value='';inp.click();
+}
+async function onPhotoPicked(e){
+  const file=e.target.files&&e.target.files[0];const field=photoFor;photoFor=null;if(!file||!field)return;
+  if(field==='chat')return chatPhoto(file);
+  const list=((ui.photos[field]||{}).list||[]).slice();if(list.length>=PHOTO_MAX)return;
+  ui.photos[field]={list,busy:true};refreshPhotos();
+  try{const ph=await savePhoto(file);if(ui.photos[field])ui.photos[field]={list:list.concat(ph)}}
+  catch(err){console.error(err);ui.photos[field]={list,note:'That photo didn’t work. Try another one.'}}
+  refreshPhotos();
+}
+async function chatPhoto(file){
+  if(!chatOK())return;
+  try{const ph=await savePhoto(file);await fs.collection('games').doc(gid).collection('chat').add({by:me,name:myName,text:'📷 Photo',photo:ph.id,t:ph.t,at:Date.now()})}
+  catch(e){console.error(e);alertChat('That photo didn’t send. Try another one, or check your connection.')}
+}
+function applyPhotos(){
+  if(!photoOK())return;
+  document.querySelectorAll(VOICE_SEL).forEach(el=>{
+    const id=el.id,box=el.closest('.field')||el.parentNode;if(!box||box.querySelector('.photorow'))return;
+    const v=ui.photos[id]||{list:[]};
+    const row=document.createElement('div');row.className='photorow small';
+    row.innerHTML=`${v.list.map((p,i)=>`<span class="phedit"><img src="${esc(p.t)}" alt="Photo ${i+1}"><button type="button" class="link" data-ph="drop" data-arg="${id}" data-i="${i}" aria-label="Remove photo ${i+1}">✕</button></span>`).join('')}${v.busy?'<span>Adding photo…</span>':v.list.length<PHOTO_MAX?`<button type="button" class="small" data-ph="pick" data-arg="${id}">📷 ${v.list.length?'Add another':'Add a photo'}</button>`:''}${v.note?`<span class="muted">${esc(v.note)}</span>`:''}`;
+    box.appendChild(row);
+  });
+}
+function refreshPhotos(){document.querySelectorAll('.photorow').forEach(r=>r.remove());applyPhotos()}
+function takePhotos(field){const v=ui.photos[field];return v&&v.list&&v.list.length?v.list.map(p=>({id:p.id,t:p.t})):null}
+function photoTag(list,who){const a=(Array.isArray(list)?list:[]).filter(p=>p&&p.id&&okThumb(p.t));if(!a.length)return '';
+  return `<div class="phlist">${a.map((p,i)=>`<button type="button" class="phbtn" data-ph="view" data-arg="${esc(p.id)}" data-who="${esc(who||'')}" aria-label="Open photo ${i+1}"><img src="${esc(p.t)}" alt=""></button>`).join('')}</div>`}
+async function phView(id,who){
+  let box=$('#phbox');if(!box){box=document.createElement('div');box.id='phbox';document.body.appendChild(box)}
+  box.innerHTML=`<div class="phshade" data-ph="close"></div><div class="phcard" role="dialog" aria-label="Photo"><div class="phtop"><b>${esc(who||'Photo')}</b><button type="button" class="link" data-ph="close" aria-label="Close photo">✕</button></div><div class="phimg"><p class="muted">Loading…</p></div></div>`;
+  let d=null;try{d=await photoData(id)}catch(e){console.error(e)}
+  const at=box.querySelector('.phimg');if(!at||!$('#phbox'))return;
+  if(!d||!d.data){at.innerHTML='<p class="muted">This photo isn’t here any more.</p>';return}
+  at.innerHTML=`<img src="${esc(d.data)}" alt="Photo${who?' from '+esc(who):''}"><div class="phacts"><a class="button small" href="${esc(d.data)}" download="better-me-photo.jpg">Save photo</a>${d.by===me?`<button type="button" class="small" data-ph="del" data-arg="${esc(id)}">Delete photo</button>`:''}</div>`;
+}
+function phClose(){const x=$('#phbox');if(x)x.remove()}
+/* Delete my own photo everywhere: the full photo, and the little previews in my posts and chat messages. */
+async function removePhoto(id){
+  await fs.collection('games').doc(gid).collection('photos').doc(id).update({data:'',gone:true});
+  photoCache.set(id,{data:'',by:me});
+  const has=l=>Array.isArray(l)&&l.some(x=>x&&x.id===id),drop=l=>l.filter(x=>x&&x.id!==id);
+  for(const p of posts){if(p.by!==me)continue;const patch={};
+    if(has(p.photos))patch.photos=drop(p.photos);if(p.commit&&has(p.commit.photos))patch['commit.photos']=drop(p.commit.photos);
+    if(Object.keys(patch).length)await POSTS().doc(p.id).update(patch)}
+  for(const m of chat){if(m.by===me&&m.photo===id)await fs.collection('games').doc(gid).collection('chat').doc(m.id).update({photo:null,t:null,text:'📷 Photo deleted'})}
+}
+/* Game sheet: every photo from the game, full size once the game is over, so "Save as PDF" keeps them. */
+function allPhotos(){const out=[];const add=(l,by)=>(Array.isArray(l)?l:[]).forEach(p=>{if(p&&p.id&&okThumb(p.t))out.push({id:p.id,t:p.t,by})});
+  posts.forEach(p=>{add(p.photos,p.by);if(p.commit)add(p.commit.photos,p.by)});
+  chat.forEach(m=>{if(m.photo&&okThumb(m.t))out.push({id:m.photo,t:m.t,by:m.by})});
+  return out}
+function sheetPhotos(){const a=allPhotos();if(!a.length)return '';
+  return `<h3 class="small muted" style="font-family:var(--body);text-transform:uppercase;letter-spacing:.06em">Photos from this game (${a.length})</h3>
+  <p class="small muted">Photos are kept for 1 year after they’re posted. Tap “Save as PDF / print” to keep them for good.</p>
+  <div class="phgrid">${a.map(p=>{const c=photoCache.get(p.id);if(c&&c.data==='')return '';const src=c&&c.data?c.data:p.t;
+    return `<figure><button type="button" class="phbtn phwide" data-ph="view" data-arg="${esc(p.id)}" data-who="${esc(nm(p.by))}" aria-label="Open photo from ${esc(nm(p.by))}"><img data-full="${esc(p.id)}" src="${esc(src)}" alt="Photo from ${esc(nm(p.by))}"></button><figcaption>${esc(nm(p.by))}</figcaption></figure>`}).join('')}</div>`}
+async function loadFulls(){await Promise.all([...document.querySelectorAll('img[data-full]')].map(async i=>{try{const d=await photoData(i.dataset.full);if(d&&d.data&&i.getAttribute('src')!==d.data)i.src=d.data}catch(e){}}))}
+document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('[data-ph]');if(!b)return;e.preventDefault();const k=b.dataset.ph,arg=b.dataset.arg;
+  if(k==='pick')pickPhoto(arg);
+  if(k==='drop'){const v=ui.photos[arg];if(v&&v.list){const gone=v.list.splice(Number(b.dataset.i),1)[0];
+    if(gone)fs.collection('games').doc(gid).collection('photos').doc(gone.id).update({data:'',gone:true}).catch(()=>{})}refreshPhotos()}
+  if(k==='view')phView(arg,b.dataset.who);
+  if(k==='close')phClose();
+  if(k==='del'){if(!b.dataset.sure){b.dataset.sure='1';b.textContent='Tap again to delete';return}
+    b.disabled=true;removePhoto(arg).then(()=>{phClose();render()}).catch(err=>{console.error(err);b.textContent='Couldn’t delete. Try again.';b.disabled=false;delete b.dataset.sure})}
+});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&$('#phbox'))phClose()});
 
 /* ---------- game chat (Dan, 2026-11-14) ----------
    One group chat per game, players only. It lives in its own corner box (#chatdock), outside #main,
@@ -501,13 +687,14 @@ function renderChat(){
   const box=$('#chatlist');const atBottom=!box||box.scrollHeight-box.scrollTop-box.clientHeight<40;
   const draft=($('#chatin')||{}).value||'';const hadFocus=document.activeElement&&document.activeElement.id==='chatin';
   dock.innerHTML=`<div class="chatbox" role="dialog" aria-label="Game chat"><div class="chathead"><b>💬 Game chat</b><span class="small muted">Everyone in this game sees it</span><button class="link" data-chat="close" aria-label="Close chat">✕</button></div>
-    <div id="chatlist">${chat.length?chat.map(m=>`<div class="chatmsg ${m.by===me?'mine':''}"><div class="chatmeta">${m.by===me?'You':esc(m.name||nameOf(m.by))} · ${chatTime(m.at)}</div>${m.audio
-        ?`<button class="chattext voicebtn" data-chat="play" data-arg="${esc(m.audio)}">${ui.playing===m.audio?'⏸':'▶'} Voice message · ${fmtDur(m.dur)}</button>`
+    <div id="chatlist">${chat.length?chat.map(m=>`<div class="chatmsg ${m.by===me?'mine':''}"><div class="chatmeta">${m.by===me?'You':esc(m.name||nameOf(m.by))} · ${chatTime(m.at)}</div>${m.photo&&okThumb(m.t)
+        ?`<button type="button" class="phbtn chatph" data-ph="view" data-arg="${esc(m.photo)}" data-who="${esc(m.by===me?'You':(m.name||nameOf(m.by)))}" aria-label="Open photo"><img src="${esc(m.t)}" alt=""></button>`
+        :m.audio?clipBtn({id:m.audio,dur:m.dur},'Voice message',m.by===me?'You':(m.name||nameOf(m.by)),'chattext voicebtn')
         :`<div class="chattext">${esc(m.text)}</div>`}</div>`).join('')
       :'<p class="small muted" style="text-align:center;margin:18px 0">No messages yet. Say hi 👋</p>'}</div>
     ${ui.rec?`<div class="chatform recbar"><span class="recdot" aria-hidden="true"></span><span id="rectime" style="flex:1">Recording ${fmtDur(recSecs())} / 1:00</span>
         <button class="small" type="button" data-chat="reccancel">Cancel</button><button class="primary small" type="button" data-chat="recsend">Send</button></div>`
-      :`<form class="chatform" data-chat="form"><input id="chatin" maxlength="500" autocomplete="off" placeholder="Write a message…">${canRecord()?'<button class="small micbtn" type="button" data-chat="rec" aria-label="Record a voice message" title="Voice message (up to 1 minute)">🎤</button>':''}<button class="primary small" type="submit">Send</button></form>`}</div>`;
+      :`<form class="chatform" data-chat="form"><input id="chatin" maxlength="500" autocomplete="off" placeholder="Write a message…"><button class="small micbtn" type="button" data-ph="pick" data-arg="chat" aria-label="Send a photo" title="Send a photo">📷</button>${canRecord()?'<button class="small micbtn" type="button" data-chat="rec" aria-label="Record a voice message" title="Voice message (up to 1 minute)">🎤</button>':''}<button class="primary small" type="submit">Send</button></form>`}</div>`;
   const inp=$('#chatin');if(inp){inp.value=draft;if(hadFocus)inp.focus()}
   const list=$('#chatlist');if(atBottom)list.scrollTop=list.scrollHeight;
 }
@@ -519,7 +706,7 @@ async function sendChat(){
 }
 /* Voice messages (Dan, 2026-11-14): up to 1 minute, low bitrate. The sound is stored in games/{id}/audio
    and only downloads when someone taps play, so opening the chat stays fast and within the free plan. */
-const REC_MAX=60;let recorder=null,recChunks=[],recStart=0,recTimer=null,recCancel=false,player=null;const audioCache=new Map();
+const REC_MAX=60;let recorder=null,recChunks=[],recStart=0,recTimer=null,recCancel=false;const audioCache=new Map();
 function canRecord(){return !!(window.MediaRecorder&&navigator.mediaDevices&&navigator.mediaDevices.getUserMedia)}
 function fmtDur(s){s=Math.max(0,Math.round(s||0));return Math.floor(s/60)+':'+String(s%60).padStart(2,'0')}
 function recSecs(){return recStart?(Date.now()-recStart)/1000:0}
@@ -548,25 +735,13 @@ async function startRec(){
   recTimer=setInterval(()=>{const t=$('#rectime');if(t)t.textContent='Recording '+fmtDur(recSecs())+' / 1:00';if(recSecs()>=REC_MAX)stopRec(false)},250);
 }
 function stopRec(cancel){if(!recorder)return;recCancel=!!cancel;try{recorder.stop()}catch(e){}}
-async function playVoice(id){
-  if(player&&ui.playing===id){player.pause();player=null;ui.playing=null;renderChat();return}
-  if(player){player.pause();player=null}
-  ui.playing=id;renderChat();
-  try{
-    let data=audioCache.get(id);
-    if(!data){const d=await fs.collection('games').doc(gid).collection('audio').doc(id).get();data=d.exists?d.data().data:null;if(data)audioCache.set(id,data)}
-    if(!data||ui.playing!==id)throw new Error('missing');
-    player=new Audio(data);player.onended=()=>{player=null;ui.playing=null;renderChat()};await player.play();
-  }catch(e){console.error(e);player=null;ui.playing=null;renderChat();alertChat('That voice message couldn’t play here. Try another browser.')}
-}
 function alertChat(t){const l=$('#chatlist');if(l){const p=document.createElement('p');p.className='small missmsg';p.textContent=t;l.appendChild(p);l.scrollTop=l.scrollHeight}}
 document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('[data-chat]');if(!b||b.tagName==='FORM')return;
   if(b.dataset.chat==='open'){ui.chatOpen=true;chatMarkRead();renderChat();const i=$('#chatin');if(i)i.focus();const l=$('#chatlist');if(l)l.scrollTop=l.scrollHeight}
-  if(b.dataset.chat==='close'){stopRec(true);if(player){player.pause();player=null;ui.playing=null}ui.chatOpen=false;chatMarkRead();renderChat()}
+  if(b.dataset.chat==='close'){stopRec(true);ui.chatOpen=false;chatMarkRead();renderChat()}
   if(b.dataset.chat==='rec')startRec();
   if(b.dataset.chat==='recsend')stopRec(false);
-  if(b.dataset.chat==='reccancel')stopRec(true);
-  if(b.dataset.chat==='play')playVoice(b.dataset.arg);});
+  if(b.dataset.chat==='reccancel')stopRec(true);});
 document.addEventListener('submit',e=>{if(e.target&&e.target.dataset&&e.target.dataset.chat==='form'){e.preventDefault();sendChat()}});
 
 /* ---------- actions ---------- */
@@ -714,7 +889,7 @@ async function playSaved(i){
 async function postFF(cat){
   const p=game.pending;if(!myTurn()||!p||!p.ff||!KEYS.includes(cat))return;
   const post={by:me,cat,card:'FF',idx:p.idx,text:((($('#ans')||{}).value)||'').trim().slice(0,4000),pts:1,kind:'turn',at:Date.now()};
-  const fv=takeVoice('ans');if(fv)post.voice=fv;
+  const fv=takeVoice('ans');if(fv)post.voice=fv;const fp=takePhotos('ans');if(fp)post.photos=fp;
   await POSTS().add(post);clearVoice('ans');
   tipsTurnDone();
   const r=checkEnd(posts.concat(post));
@@ -771,8 +946,8 @@ async function postAnswer(){
   const p=game.pending;if(!myTurn()||!p||p.choose)return;
   syncPts(p);
   const post={by:me,cat:p.cat,idx:p.idx,text:((($('#ans')||{}).value)||'').trim().slice(0,4000),pts:ui.pts,kind:'turn',at:Date.now()};
-  const c=readCommit();if(c===false)return;if(c){const cv=takeVoice('c_text');if(cv)c.voice=cv;post.commit=c}
-  const av=takeVoice('ans');if(av)post.voice=av;
+  const c=readCommit();if(c===false)return;if(c){const cv=takeVoice('c_text');if(cv)c.voice=cv;const cp=takePhotos('c_text');if(cp)c.photos=cp;post.commit=c}
+  const av=takeVoice('ans');if(av)post.voice=av;const ap=takePhotos('ans');if(ap)post.photos=ap;
   /* Helping Hand: also give another player a free card of any category, saved for their turn. */
   let gift=null;
   if(p.hh){const to=($('#hh_to')||{}).value;if(to&&game.players.includes(to)&&to!==me){gift=to;post.helped=to}}
@@ -800,8 +975,8 @@ async function joinIn(parentId){
   const text=(($('#j_'+parentId)||{}).value||'').trim();
   const pts=ptsFrom(joinLimit(parent),ui.jShare,ui.jOther,ui.jCommit);
   const post={by:me,cat:parent.cat,idx:parent.idx,text:text.slice(0,4000),pts,kind:'join',parent:parentId,at:Date.now()};
-  const c=readCommit(ui.jCommit,'#jc_');if(c===false)return;if(c){const cv=takeVoice('jc_text');if(cv)c.voice=cv;post.commit=c}
-  const jv=takeVoice('j_'+parentId);if(jv)post.voice=jv;
+  const c=readCommit(ui.jCommit,'#jc_');if(c===false)return;if(c){const cv=takeVoice('jc_text');if(cv)c.voice=cv;const cp=takePhotos('jc_text');if(cp)c.photos=cp;post.commit=c}
+  const jv=takeVoice('j_'+parentId);if(jv)post.voice=jv;const jp=takePhotos('j_'+parentId);if(jp)post.photos=jp;
   await POSTS().add(post);clearVoice('jc_text','j_'+parentId);
   const r=checkEnd(posts.concat(post));
   if(r.winners.length)await G().update({status:'over',winner:r.winners[0],pending:null});
@@ -846,6 +1021,8 @@ function render(){
   reapplyFlags();
   applyTip();
   applyVoice();
+  applyPhotos();
+  if(game&&game.status==='over')loadFulls();
 }
 /* ---------- beginner tips: one small yellow bubble pointing at the next thing to do ----------
    On by default. Basic turn tips show for a player's first 3 turns; "first time" tips (wild pick,
@@ -1098,9 +1275,9 @@ function commitRow(p,mode){
   const ns=notesFor(p.id);const inGame=game.players.includes(me);
   const canTalk=inGame&&(p.by===me||c.partner===me);
   const ask=mode==='partner'&&!c.done?`Hi ${nameOf(p.by)}, how’s it going with: ${c.text}?`:'';
-  return `<div class="commit"><div class="spread"><span class="answer">${esc(c.text)}${voiceTag(c.voice)}</span>${status}</div>
+  return `<div class="commit"><div class="spread"><span class="answer">${esc(c.text)}${voiceTag(c.voice,nameOf(p.by))}</span>${status}</div>${photoTag(c.photos,nameOf(p.by))}
     <div class="small muted">${who} · by ${esc(fmtDate(c.due))} · ${CATS[p.cat].name}</div>
-    ${ns.length?`<div class="replies" style="margin-top:6px">${ns.map(n=>`<div class="reply small"><b>${esc(nm(n.by))}</b> <span class="muted">${new Date(n.at).toLocaleDateString(undefined,{month:'short',day:'numeric'})}</span><div class="answer">${esc(n.text)}</div></div>`).join('')}</div>`:''}
+    ${ns.length?`<div class="replies" style="margin-top:6px">${ns.map(n=>`<div class="reply small"><b>${esc(nm(n.by))}</b> <span class="muted">${new Date(n.at).toLocaleDateString(undefined,{month:'short',day:'numeric'})}</span><div class="answer">${esc(n.text)}${voiceTag(n.voice,nm(n.by))}</div>${photoTag(n.photos,nm(n.by))}</div>`).join('')}</div>`:''}
     ${canTalk?`<div class="row" style="margin-top:6px"><input id="n_${p.id}" placeholder="${esc(mode==='partner'?'Send a check-in message':'Send an update or reply')}" style="flex:1;min-width:160px">
       <button class="small" data-act="note" data-arg="${p.id}">Send</button>
       ${ask?`<button class="small" data-act="asknote" data-arg="${p.id}">Ask how it’s going</button>`:''}
@@ -1109,7 +1286,8 @@ function commitRow(p,mode){
 }
 function commitsPanel(){
   const g=commitGroups();const over=game.status==='over';
-  if(!g.list.length)return over?`<section class="panel" id="sheet"><h2>Your game sheet</h2><p class="muted">No commitments were made this game. Next game, tick “I’m making a commitment” on a card to earn extra points, and they’ll show up here.</p></section>`:'';
+  const pics=sheetPhotos();
+  if(!g.list.length)return over?`<section class="panel" id="sheet"><h2>Your game sheet</h2><p class="muted">No commitments were made this game. Next game, tick “I’m making a commitment” on a card to earn extra points, and they’ll show up here.</p>${pics}${pics?'<div class="row noprint"><button class="small" data-act="sheetprint">Save as PDF / print</button></div>':''}</section>`:'';
   return `<section class="panel" id="sheet"><h2>${over?'Your game sheet':'Commitments'}</h2>
   ${over?'<p class="sub">Keep this. Your commitments, who’s holding you to them, and the ones you’re holding others to. This page stays at this link.</p>':''}
   <h3 class="small muted" style="font-family:var(--body);text-transform:uppercase;letter-spacing:.06em">Your commitments</h3>
@@ -1117,6 +1295,7 @@ function commitsPanel(){
   <h3 class="small muted" style="font-family:var(--body);text-transform:uppercase;letter-spacing:.06em">You’re the accountability partner for</h3>
   ${g.partner.length?g.partner.map(p=>commitRow(p,'partner')).join(''):'<p class="small muted">Nobody has picked you yet.</p>'}
   ${g.rest.length?`<details><summary class="small">Everyone else’s commitments (${g.rest.length})</summary>${g.rest.map(p=>commitRow(p,'rest')).join('')}</details>`:''}
+  ${pics}
   <div class="row noprint"><button class="small" data-act="sheetcopy">Copy as text</button><button class="small" data-act="sheetmail">Email it to me</button>
     <button class="small" data-act="sheetprint">Save as PDF / print</button><button class="small" data-act="sheetcal">Add check-in dates to my calendar</button></div>
   </section>`;
@@ -1149,9 +1328,11 @@ function sheetIcs(){
 async function addNote(postId,preset){
   const p=posts.find(x=>x.id===postId);if(!p||!p.commit||!(p.by===me||p.commit.partner===me))return;
   const box=$('#n_'+postId);const text=(preset||(box&&box.value)||'').trim();
-  if(!text){ui.msg='Type a message first.';return}
-  await POSTS().add({by:me,cat:null,idx:null,text:text.slice(0,1000),pts:0,kind:'note',parent:postId,at:Date.now()});
-  if(box)box.value='';
+  const f='n_'+postId,vo=preset?null:takeVoice(f),ph=preset?null:takePhotos(f);
+  if(!text&&!vo&&!ph){ui.msg='Type a message first.';return}
+  const note={by:me,cat:null,idx:null,text:text.slice(0,1000),pts:0,kind:'note',parent:postId,at:Date.now()};if(vo)note.voice=vo;if(ph)note.photos=ph;
+  await POSTS().add(note);
+  if(box)box.value='';if(!preset)clearVoice(f);
 }
 /* Points for someone joining another player's card. Same options as the card, except when the card
    gives the sharing point only to the player who drew it ("1 point to the player drawing this card"):
@@ -1201,9 +1382,9 @@ function postLine(p){
   const canJoin=game.players.includes(me)&&p.by!==me&&!reps.some(r=>r.by===me)&&JOINABLE.test(t)&&game.status==='playing'&&!p.card;
   return `<div class="post"><div class="meta"><b>${esc(nm(p.by))}</b>${p.kind==='bonus'?' (bonus card)':''} ${chip}<span>+${p.pts}</span><span>${when}</span>${heartBtn(deck,p.idx)}</div>
   <details class="qline"><summary class="small" style="font-family:var(--body);font-weight:500">The card</summary>${esc(t)}</details>
-  ${p.text||p.voice?`<div class="answer">${esc(p.text)}${voiceTag(p.voice)}</div>`:''}
-  ${p.commit?`<div class="small muted">Committed: ${esc(p.commit.text)}${voiceTag(p.commit.voice)}</div>`:''}
-  ${reps.length?`<div class="replies">${reps.map(r=>`<div class="reply"><div class="meta"><b>${esc(nm(r.by))}</b> joined in <span>+${r.pts}</span></div>${r.text||r.voice?`<div class="answer">${esc(r.text)}${voiceTag(r.voice)}</div>`:''}${r.commit?`<div class="small muted">Committed: ${esc(r.commit.text)}${voiceTag(r.commit.voice)}</div>`:''}</div>`).join('')}</div>`:''}
+  ${p.text||p.voice?`<div class="answer">${esc(p.text)}${voiceTag(p.voice,nm(p.by))}</div>`:''}${photoTag(p.photos,nm(p.by))}
+  ${p.commit?`<div class="small muted">Committed: ${esc(p.commit.text)}${voiceTag(p.commit.voice,nm(p.by))}</div>${photoTag(p.commit.photos,nm(p.by))}`:''}
+  ${reps.length?`<div class="replies">${reps.map(r=>`<div class="reply"><div class="meta"><b>${esc(nm(r.by))}</b> joined in <span>+${r.pts}</span></div>${r.text||r.voice?`<div class="answer">${esc(r.text)}${voiceTag(r.voice,nm(r.by))}</div>`:''}${photoTag(r.photos,nm(r.by))}${r.commit?`<div class="small muted">Committed: ${esc(r.commit.text)}${voiceTag(r.commit.voice,nm(r.by))}</div>${photoTag(r.commit.photos,nm(r.by))}`:''}</div>`).join('')}</div>`:''}
   ${canJoin?(ui.joinOpen===p.id?joinPanel(p)
     :`<div class="row"><button class="small" data-act="joinopen" data-arg="${p.id}">Join in on this card</button></div>`):''}</div>`;
 }
@@ -1273,7 +1454,7 @@ document.addEventListener('click',e=>{
   if(a==='partyclose'){party=null;clearTimeout(partyTimer);render();return}
   if(a==='sheetcopy'){copyText(sheetText(),'Game sheet copied. Paste it into notes, a message or an email.','');return}
   if(a==='sheetmail'){location.href='mailto:?subject='+encodeURIComponent('My Better Me game sheet')+'&body='+encodeURIComponent(sheetText());return}
-  if(a==='sheetprint'){document.body.classList.add('printsheet');window.print();setTimeout(()=>document.body.classList.remove('printsheet'),500);return}
+  if(a==='sheetprint'){loadFulls().then(()=>setTimeout(()=>{document.body.classList.add('printsheet');window.print();setTimeout(()=>document.body.classList.remove('printsheet'),500)},300));return}
   if(a==='sheetcal'){sheetIcs();return}
   if(a==='home'){openGame(null);return}
   if(a==='open'){openGame(arg);return}
