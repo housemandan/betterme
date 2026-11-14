@@ -405,25 +405,32 @@ function checkEnd(list){
 }
 /* Highlight a field that still needs filling, with a short reason right under it.
    Done in place (no re-render) so nothing the player typed is lost; clears as soon as they fix it. */
-function flagField(sel,msg){
+/* Flags are kept in ui.flags so they survive the screen redraw that follows every button press. */
+ui.flags=new Map();
+function flagField(sel,msg){ui.flags.set(sel,msg);showFlag(sel,msg)}
+function showFlag(sel,msg){
   const el=$(sel);if(!el)return;const box=el.closest('.field')||el.parentNode;
   box.classList.add('missing');
   let m=box.querySelector('.missmsg');if(!m){m=document.createElement('div');m.className='missmsg';box.appendChild(m)}
   m.textContent=msg;
-  const clear=()=>{box.classList.remove('missing');m.remove()};
+  const clear=()=>{ui.flags.delete(sel);box.classList.remove('missing');m.remove()};
   el.addEventListener('input',clear,{once:true});el.addEventListener('change',clear,{once:true});
 }
-function clearFlags(){document.querySelectorAll('.field.missing').forEach(b=>{b.classList.remove('missing');const m=b.querySelector('.missmsg');if(m)m.remove()})}
+function reapplyFlags(){
+  ui.flags.forEach((msg,sel)=>{if($(sel))showFlag(sel,msg);else ui.flags.delete(sel)});
+  if(ui.flagFocus){const el=$(ui.flagFocus);ui.flagFocus=null;if(el){el.scrollIntoView({behavior:'smooth',block:'center'});el.focus({preventScroll:true})}}
+}
+function clearFlags(){ui.flags.clear();document.querySelectorAll('.field.missing').forEach(b=>{b.classList.remove('missing');const m=b.querySelector('.missmsg');if(m)m.remove()})}
 /* Reads the commitment fields (your own turn uses #c_..., joining someone's card uses #jc_...). */
 function readCommit(open=ui.commitOpen,pre='#c_'){
-  if(!open)return null;
   clearFlags();
+  if(!open)return null;
   const t=($(pre+'text')||{}).value||'',partner=($(pre+'partner')||{}).value||'',due=($(pre+'due')||{}).value||'';
   const today=new Date().toISOString().slice(0,10);let first=null;
   if(!t.trim()){flagField(pre+'text','👆 Almost there! Write one small thing you’ll do (or untick “I’m making a commitment”).');first=first||pre+'text'}
   if(!/^\d{4}-\d{2}-\d{2}$/.test(due)){flagField(pre+'due','👆 Pick a check-in date, so your partner knows when to cheer you on.');first=first||pre+'due'}
   else if(due<today){flagField(pre+'due','👆 Pick today or a day coming up.');first=first||pre+'due'}
-  if(first){const el=$(first);el.scrollIntoView({behavior:'smooth',block:'center'});el.focus({preventScroll:true});return false}
+  if(first){ui.flagFocus=first;return false}
   return {text:t.trim().slice(0,500),partner,due,done:false};
 }
 /* Each card's points come from the master card list: [for sharing, extra for a commitment]. */
@@ -433,7 +440,7 @@ function ptsLimit(c,i){const v=(typeof PTS!=='undefined'&&PTS[c]&&PTS[c][i])||[1
 function ptsFrom(lim,share,other,commit){return Math.min(lim.max,(share?lim.share:0)+(other?lim.otherPts:0)+(commit?lim.commit:0))}
 function syncPts(p){
   const key=p.cat+p.idx;const lim=ptsLimit(p.cat,p.idx);
-  if(ui.ptsFor!==key){ui.ptsFor=key;ui.optShare=lim.share>0;ui.optOther=false;ui.commitOpen=false}
+  if(ui.ptsFor!==key){ui.ptsFor=key;ui.optShare=lim.share>0;ui.optOther=false;ui.commitOpen=false;ui.flags.clear()}
   ui.pts=ptsFrom(lim,ui.optShare,ui.optOther,ui.commitOpen);
 }
 async function postAnswer(){
@@ -510,6 +517,7 @@ function render(){
   const keep=snapshotInputs();
   $('#main').outerHTML=`<div id="main" style="display:contents">${view()}</div>`;
   restoreInputs(keep);
+  reapplyFlags();
   applyTip();
 }
 /* ---------- beginner tips: one small yellow bubble pointing at the next thing to do ----------
