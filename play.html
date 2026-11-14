@@ -192,6 +192,8 @@ details ol,details ul{margin:.4em 0;padding-left:1.3em}
 .chatmsg.mine .chattext{background:var(--lav);color:var(--accentFg)}
 .chatform{display:flex;gap:6px;padding:8px;border-top:1px solid var(--line)}
 .chatform input{flex:1;min-width:0;margin:0}
+.alertrow{margin:6px 0 10px;color:var(--muted)}
+.alertrow button{margin-left:6px}
 .micbtn{padding:6px 10px;font-size:1.05rem}
 .voicebtn{border:0;cursor:pointer;font:inherit;font-weight:700;color:inherit}
 .chatmsg.mine .voicebtn{background:var(--lav);color:var(--accentFg)}
@@ -288,12 +290,50 @@ function route(){
   gid=next;game=null;posts=[];postsReady=false;seenFull=null;seenPosts=null;party=null;ui.joinOpen=null;ui.commitOpen=false;ui.pts=1;ui.msg='';
   if(unGame)unGame();if(unPosts)unPosts();unGame=unPosts=null;stopChat();
   if(gid){
-    unGame=fs.collection('games').doc(gid).onSnapshot(s=>{game=s.exists?Object.assign({id:s.id},s.data()):false;render();maybeBot();syncChat()},()=>{game=false;render();syncChat()});
+    unGame=fs.collection('games').doc(gid).onSnapshot(s=>{const before=game;game=s.exists?Object.assign({id:s.id},s.data()):false;render();maybeBot();syncChat();
+      /* This browser just moved the turn on (posted, skipped, started, removed someone): ask the alert sender to tell whoever is up. */
+      if(s.metadata.hasPendingWrites&&game&&before&&game.status==='playing'&&(before.turn!==game.turn||before.status!=='playing'||before.players.length!==game.players.length))pingTurn()},()=>{game=false;render();syncChat()});
     unPosts=fs.collection('games').doc(gid).collection('posts').orderBy('at','asc').onSnapshot(s=>{posts=s.docs.map(d=>Object.assign({id:d.id},d.data()));postsReady=true;render();maybeBot()},()=>{});
   }
   render();
 }
 function openGame(id){location.hash=id?id:'home'}
+
+/* ---------- turn alerts (Dan, 2026-11-14) ----------
+   Off until a player taps "Turn on" (one per phone/computer). A free Cloudflare Worker (build/push-worker.js) sends them.
+   iPhones only allow alerts once Better Me is added to the Home Screen, so they get that tip first. */
+const PUSH_URL='';
+const isIOS=/iPad|iPhone|iPod/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
+const isStandalone=()=>window.matchMedia('(display-mode: standalone)').matches||navigator.standalone===true;
+function alertsSupported(){return !!(PUSH_URL&&'serviceWorker' in navigator&&'PushManager' in window&&'Notification' in window)}
+function alertsOn(){return lsGet('bm_alerts')==='on'&&window.Notification&&Notification.permission==='granted'}
+async function pushCall(path,extra){const token=await firebase.auth().currentUser.getIdToken();
+  const r=await fetch(PUSH_URL+path,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(Object.assign({token,gid},extra||{}))});return r.json()}
+function pingTurn(){if(!PUSH_URL||!gid||!game||game.practice)return;pushCall('/notify').catch(e=>console.warn('alert',e))}
+async function alertsEnable(){
+  if(isIOS&&!isStandalone()){ui.alertMsg='On iPhone: tap the Share button, then “Add to Home Screen”. Open Better Me from your Home Screen, then turn alerts on there.';return}
+  if(!alertsSupported()){ui.alertMsg='This browser can’t show alerts. Try Chrome, or add Better Me to your Home Screen.';return}
+  const perm=await Notification.requestPermission();
+  if(perm!=='granted'){ui.alertMsg='Alerts are blocked for this site. You can allow them in your browser’s site settings any time.';return}
+  const reg=await navigator.serviceWorker.ready;
+  const {key}=await (await fetch(PUSH_URL+'/key')).json();
+  let sub=await reg.pushManager.getSubscription();
+  if(!sub)sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:urlB64(key)});
+  const r=await pushCall('/subscribe',{sub:sub.toJSON()});if(!r.ok)throw new Error(r.error||'subscribe');
+  lsSet('bm_alerts','on');ui.alertMsg='Turn alerts are on for this device. 🔔';
+  pushCall('/test').catch(()=>{});
+}
+async function alertsDisable(){
+  lsSet('bm_alerts','off');ui.alertMsg='Turn alerts are off.';
+  try{await pushCall('/unsubscribe');const reg=await navigator.serviceWorker.ready;const s=await reg.pushManager.getSubscription();if(s)await s.unsubscribe()}catch(e){console.warn(e)}
+}
+function urlB64(s){s=s.replace(/-/g,'+').replace(/_/g,'/');while(s.length%4)s+='=';const b=atob(s);return Uint8Array.from(b,c=>c.charCodeAt(0))}
+function alertsRow(){
+  if(!PUSH_URL||!game||game.practice||!game.players.includes(me)||game.status==='over'||game.players.filter(p=>!isBot(p)).length<2)return '';
+  const on=alertsOn();const m=ui.alertMsg?`<div class="small" style="margin-top:4px">${esc(ui.alertMsg)}</div>`:'';
+  return `<div class="alertrow small">${on?`🔔 Turn alerts are on <button class="link" data-act="alertsoff">Turn off</button>`
+    :`🔔 Want a heads-up when it’s your turn? <button class="small" data-act="alertson">Turn on alerts</button>`}${m}</div>`;
+}
 
 /* ---------- game chat (Dan, 2026-11-14) ----------
    One group chat per game, players only. It lives in its own corner box (#chatdock), outside #main,
@@ -739,11 +779,11 @@ function view(){
   if(game===null)return msg+`<section class="panel"><p class="muted">Loading the game…</p></section>`;
   if(game===false)return msg+`<section class="panel"><h2>Game not found</h2><p class="muted">Check the link, or ask your friend to send it again.</p><div class="row"><button data-act="home">My games</button></div></section>`;
   const bar=`<div class="spread"><button class="link" data-act="home">← My games</button><h2>${esc(game.name||'Game')}</h2></div>`;
-  if(game.status==='lobby')return msg+who+bar+lobby()+rulesBox()+suggestBox();
+  if(game.status==='lobby')return msg+who+bar+alertsRow()+lobby()+rulesBox()+suggestBox();
   const party=celebration();
   /* Game over (Dan, 2026-11-14): the winner box is the very first thing, the game sheet right under it, then everything else. */
   if(game.status==='over')return msg+winnerBox()+commitsPanel()+party+scoreboard()+feed()+bar+who+suggestBox()+rulesBox();
-  return party+msg+who+bar+scoreboard()+turnPanel()+commitsPanel()+feed()+suggestBox()+rulesBox()+hostBox();
+  return party+msg+who+bar+alertsRow()+scoreboard()+turnPanel()+commitsPanel()+feed()+suggestBox()+rulesBox()+hostBox();
 }
 /* When someone fills a category: a gem appears on the scoreboard and everyone watching sees a short celebration.
    Only fires for fills that happen while the page is open (not for old ones when you first load the game). */
@@ -1097,7 +1137,7 @@ document.addEventListener('click',e=>{
   if(a==='copylink'){copyText(SITE_URL+'#'+gid,'Link copied. Paste it into WhatsApp, Messenger or LINE.','roomlink');return}
   if(a==='nudge'){copyText(`${nameOf(curPlayer())}, it’s your turn in Better Me (${game.name||'our game'})! ${SITE_URL}#${gid}`,'Copied. Paste it into WhatsApp, Messenger, LINE or a text.','');return}
   const map={savename:saveName,new:newGame,join:joinGame,spin,pass:passCard,save:saveCard,post:postAnswer,skip:skipTurn,endnow:endNow,
-    suggest:addSuggestion,practice:newPractice,plus:()=>plusOne(arg),remove:()=>removePlayer(arg),
+    suggest:addSuggestion,practice:newPractice,plus:()=>plusOne(arg),remove:()=>removePlayer(arg),alertson:alertsEnable,alertsoff:alertsDisable,
     start:()=>startGame(+(($('#target')||{}).value||2)),choose:()=>choose(arg),playsaved:()=>playSaved(+arg),
     joinpost:()=>joinIn(arg),done:()=>markDone(arg),ffpost:()=>postFF(arg),note:()=>addNote(arg),asknote:()=>{const p=posts.find(x=>x.id===arg);return addNote(arg,p?`How’s it going with: ${p.commit.text}?`:'')},heart:()=>{const [c,i]=arg.split(':');return toggleHeart(c,+i)}};
   if(map[a])act(map[a]);
