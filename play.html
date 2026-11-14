@@ -192,6 +192,9 @@ details ol,details ul{margin:.4em 0;padding-left:1.3em}
 .chatmsg.mine .chattext{background:var(--lav);color:var(--accentFg)}
 .chatform{display:flex;gap:6px;padding:8px;border-top:1px solid var(--line)}
 .chatform input{flex:1;min-width:0;margin:0}
+.sayrow{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:6px}
+.sayrow .muted{font-size:.8rem}
+.voiceplay{margin-left:6px;font-size:.85rem;white-space:nowrap}
 .alertrow{margin:6px 0 10px;color:var(--muted)}
 .alertrow button{margin-left:6px}
 .micbtn{padding:6px 10px;font-size:1.05rem}
@@ -334,6 +337,85 @@ function alertsRow(){
   return `<div class="alertrow small">${on?`🔔 Turn alerts are on <button class="link" data-act="alertsoff">Turn off</button>`
     :`🔔 Want a heads-up when it’s your turn? <button class="small" data-act="alertson">Turn on alerts</button>`}${m}</div>`;
 }
+
+/* ---------- voice answers (Dan's friend's idea, 2026-11-14) ----------
+   Any answer or commitment box gets a "🎤 Say it" button. The recording is saved (games/{id}/audio, same as chat
+   voice messages) and typed out by the free Whisper model on our Cloudflare Worker, straight into the box,
+   where the player can fix any wrong words. The post keeps both: the text (for reading and the game sheet) and a ▶ play button. */
+const VOICE_SEL='#ans,#c_text,#jc_text,textarea[id^="j_"]';
+ui.voice={};let vRec=null;
+function voiceOK(){return !!(PUSH_URL&&canRecord()&&game&&gid&&game.players&&game.players.includes(me))}
+function applyVoice(){
+  if(!voiceOK())return;
+  document.querySelectorAll(VOICE_SEL).forEach(el=>{
+    const id=el.id,box=el.closest('.field')||el.parentNode;if(!box||box.querySelector('.sayrow'))return;
+    const v=ui.voice[id]||{};const rec=vRec&&vRec.field===id;
+    const row=document.createElement('div');row.className='sayrow small';
+    row.innerHTML=rec?`<span class="recdot" aria-hidden="true"></span><b class="saytime">Recording ${fmtDur(recSecsV())} / 1:00</b><button type="button" class="small primary" data-say="stop" data-arg="${id}">Done</button><button type="button" class="small" data-say="cancel" data-arg="${id}">Cancel</button>`
+      :v.busy?`<span>✍️ Typing out what you said…</span>`
+      :v.id?`<span>🎤 Voice saved (${fmtDur(v.dur)})</span><button type="button" class="link" data-say="play" data-arg="${v.id}">▶ Play</button><button type="button" class="link" data-say="remove" data-arg="${id}">Remove</button>${v.note?`<span class="muted">${esc(v.note)}</span>`:''}`
+      :`<button type="button" class="small sayit" data-say="rec" data-arg="${id}">🎤 Say it</button><span class="muted">or type it</span>`;
+    box.appendChild(row);
+  });
+}
+function recSecsV(){return vRec?(Date.now()-vRec.start)/1000:0}
+function refreshVoice(){document.querySelectorAll('.sayrow').forEach(r=>r.remove());applyVoice()}
+async function sayRec(field){
+  if(vRec||recorder)return;
+  let stream;try{stream=await navigator.mediaDevices.getUserMedia({audio:true})}
+  catch(e){ui.voice[field]={note:'Microphone blocked. You can still type.'};refreshVoice();return}
+  const type=['audio/webm;codecs=opus','audio/mp4','audio/ogg;codecs=opus','audio/webm'].find(t=>MediaRecorder.isTypeSupported&&MediaRecorder.isTypeSupported(t));
+  let mr;try{mr=new MediaRecorder(stream,Object.assign({audioBitsPerSecond:24000},type?{mimeType:type}:{}))}catch(e){mr=new MediaRecorder(stream)}
+  const chunks=[];vRec={field,mr,start:Date.now(),cancel:false};
+  mr.ondataavailable=e=>{if(e.data&&e.data.size)chunks.push(e.data)};
+  mr.onstop=async()=>{
+    stream.getTracks().forEach(t=>t.stop());clearInterval(vRec.timer);
+    const dur=Math.min(REC_MAX,recSecsV()),cancel=vRec.cancel,mime=mr.mimeType||type||'audio/webm';vRec=null;
+    if(cancel||dur<0.7||!chunks.length){refreshVoice();return}
+    ui.voice[field]={busy:true,dur};refreshVoice();
+    try{
+      const data=await new Promise(r=>{const fr=new FileReader();fr.onload=()=>r(fr.result);fr.readAsDataURL(new Blob(chunks,{type:mime}))});
+      if(data.length>900000)throw new Error('too big');
+      const ref=await fs.collection('games').doc(gid).collection('audio').add({by:me,data,mime,dur,at:Date.now()});
+      audioCache.set(ref.id,data);
+      let text='',note='';
+      try{text=((await pushCall('/transcribe',{audio:data}))||{}).text||''}catch(e){console.warn(e)}
+      if(!text)note='Couldn’t type it out, but your voice is saved. Add a few words if you like.';
+      const el=$('#'+field);
+      if(el&&text){el.value=(el.value.trim()?el.value.trim()+' ':'')+text;el.dispatchEvent(new Event('input',{bubbles:true}))}
+      ui.voice[field]={id:ref.id,dur,note};
+    }catch(e){console.error(e);ui.voice[field]={note:'That recording didn’t save. Try again, or type it.'}}
+    refreshVoice();
+  };
+  mr.start(1000);
+  vRec.timer=setInterval(()=>{const t=document.querySelector('.saytime');if(t)t.textContent='Recording '+fmtDur(recSecsV())+' / 1:00';if(recSecsV()>=REC_MAX)sayStop(false)},250);
+  refreshVoice();
+}
+function sayStop(cancel){if(!vRec)return;vRec.cancel=!!cancel;try{vRec.mr.stop()}catch(e){}}
+/* Plays a saved voice clip from a post, the game sheet or an answer box (one at a time). */
+let clip=null;
+async function playClip(id,btn){
+  if(clip&&clip.id===id){clip.a.pause();clip=null;btn.textContent=btn.textContent.replace('⏸','▶');return}
+  if(clip){clip.a.pause();if(clip.btn)clip.btn.textContent=clip.btn.textContent.replace('⏸','▶');clip=null}
+  btn.textContent=btn.textContent.replace('▶','⏸');
+  try{
+    let data=audioCache.get(id);
+    if(!data){const d=await fs.collection('games').doc(gid).collection('audio').doc(id).get();data=d.exists?d.data().data:null;if(data)audioCache.set(id,data)}
+    if(!data)throw new Error('missing');
+    const a=new Audio(data);clip={id,a,btn};a.onended=()=>{if(clip&&clip.id===id){btn.textContent=btn.textContent.replace('⏸','▶');clip=null}};await a.play();
+  }catch(e){console.error(e);btn.textContent=btn.textContent.replace('⏸','▶');clip=null}
+}
+function voiceTag(v){return v&&v.id?` <button type="button" class="link voiceplay" data-say="play" data-arg="${esc(v.id)}">▶ Listen (${fmtDur(v.dur)})</button>`:''}
+function takeVoice(field){const v=ui.voice[field];return v&&v.id?{id:v.id,dur:Math.round(v.dur||0)}:null}
+function clearVoice(...fields){fields.forEach(f=>delete ui.voice[f])}
+document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('[data-say]');if(!b)return;e.preventDefault();
+  const a=b.dataset.say,arg=b.dataset.arg;
+  if(a==='rec')sayRec(arg);
+  if(a==='stop')sayStop(false);
+  if(a==='cancel')sayStop(true);
+  if(a==='remove'){delete ui.voice[arg];refreshVoice()}
+  if(a==='play')playClip(arg,b);
+});
 
 /* ---------- game chat (Dan, 2026-11-14) ----------
    One group chat per game, players only. It lives in its own corner box (#chatdock), outside #main,
@@ -575,7 +657,8 @@ async function playSaved(i){
 async function postFF(cat){
   const p=game.pending;if(!myTurn()||!p||!p.ff||!KEYS.includes(cat))return;
   const post={by:me,cat,card:'FF',idx:p.idx,text:((($('#ans')||{}).value)||'').trim().slice(0,4000),pts:1,kind:'turn',at:Date.now()};
-  await POSTS().add(post);
+  const fv=takeVoice('ans');if(fv)post.voice=fv;
+  await POSTS().add(post);clearVoice('ans');
   tipsTurnDone();
   const r=checkEnd(posts.concat(post));
   if(r.winners.length)await G().update({status:'over',winner:r.winners[0],pending:null,lastMoveAt:Date.now()});
@@ -631,11 +714,12 @@ async function postAnswer(){
   const p=game.pending;if(!myTurn()||!p||p.choose)return;
   syncPts(p);
   const post={by:me,cat:p.cat,idx:p.idx,text:((($('#ans')||{}).value)||'').trim().slice(0,4000),pts:ui.pts,kind:'turn',at:Date.now()};
-  const c=readCommit();if(c===false)return;if(c)post.commit=c;
+  const c=readCommit();if(c===false)return;if(c){const cv=takeVoice('c_text');if(cv)c.voice=cv;post.commit=c}
+  const av=takeVoice('ans');if(av)post.voice=av;
   /* Helping Hand: also give another player a free card of any category, saved for their turn. */
   let gift=null;
   if(p.hh){const to=($('#hh_to')||{}).value;if(to&&game.players.includes(to)&&to!==me){gift=to;post.helped=to}}
-  await POSTS().add(post);
+  await POSTS().add(post);clearVoice('ans','c_text');
   tipsTurnDone();
   const r=checkEnd(posts.concat(post));
   const extra=gift?{['saved.'+gift]:((game.saved||{})[gift]||[]).concat({gift:true,from:me})}:{};
@@ -659,8 +743,9 @@ async function joinIn(parentId){
   const text=(($('#j_'+parentId)||{}).value||'').trim();
   const pts=ptsFrom(joinLimit(parent),ui.jShare,ui.jOther,ui.jCommit);
   const post={by:me,cat:parent.cat,idx:parent.idx,text:text.slice(0,4000),pts,kind:'join',parent:parentId,at:Date.now()};
-  const c=readCommit(ui.jCommit,'#jc_');if(c===false)return;if(c)post.commit=c;
-  await POSTS().add(post);
+  const c=readCommit(ui.jCommit,'#jc_');if(c===false)return;if(c){const cv=takeVoice('jc_text');if(cv)c.voice=cv;post.commit=c}
+  const jv=takeVoice('j_'+parentId);if(jv)post.voice=jv;
+  await POSTS().add(post);clearVoice('jc_text','j_'+parentId);
   const r=checkEnd(posts.concat(post));
   if(r.winners.length)await G().update({status:'over',winner:r.winners[0],pending:null});
   ui.joinOpen=null;
@@ -703,6 +788,7 @@ function render(){
   restoreInputs(keep);
   reapplyFlags();
   applyTip();
+  applyVoice();
 }
 /* ---------- beginner tips: one small yellow bubble pointing at the next thing to do ----------
    On by default. Basic turn tips show for a player's first 3 turns; "first time" tips (wild pick,
@@ -955,7 +1041,7 @@ function commitRow(p,mode){
   const ns=notesFor(p.id);const inGame=game.players.includes(me);
   const canTalk=inGame&&(p.by===me||c.partner===me);
   const ask=mode==='partner'&&!c.done?`Hi ${nameOf(p.by)}, how’s it going with: ${c.text}?`:'';
-  return `<div class="commit"><div class="spread"><span class="answer">${esc(c.text)}</span>${status}</div>
+  return `<div class="commit"><div class="spread"><span class="answer">${esc(c.text)}${voiceTag(c.voice)}</span>${status}</div>
     <div class="small muted">${who} · by ${esc(fmtDate(c.due))} · ${CATS[p.cat].name}</div>
     ${ns.length?`<div class="replies" style="margin-top:6px">${ns.map(n=>`<div class="reply small"><b>${esc(nm(n.by))}</b> <span class="muted">${new Date(n.at).toLocaleDateString(undefined,{month:'short',day:'numeric'})}</span><div class="answer">${esc(n.text)}</div></div>`).join('')}</div>`:''}
     ${canTalk?`<div class="row" style="margin-top:6px"><input id="n_${p.id}" placeholder="${esc(mode==='partner'?'Send a check-in message':'Send an update or reply')}" style="flex:1;min-width:160px">
@@ -1058,9 +1144,9 @@ function postLine(p){
   const canJoin=game.players.includes(me)&&p.by!==me&&!reps.some(r=>r.by===me)&&JOINABLE.test(t)&&game.status==='playing'&&!p.card;
   return `<div class="post"><div class="meta"><b>${esc(nm(p.by))}</b>${p.kind==='bonus'?' (bonus card)':''} ${chip}<span>+${p.pts}</span><span>${when}</span>${heartBtn(deck,p.idx)}</div>
   <details class="qline"><summary class="small" style="font-family:var(--body);font-weight:500">The card</summary>${esc(t)}</details>
-  ${p.text?`<div class="answer">${esc(p.text)}</div>`:''}
-  ${p.commit?`<div class="small muted">Committed: ${esc(p.commit.text)}</div>`:''}
-  ${reps.length?`<div class="replies">${reps.map(r=>`<div class="reply"><div class="meta"><b>${esc(nm(r.by))}</b> joined in <span>+${r.pts}</span></div>${r.text?`<div class="answer">${esc(r.text)}</div>`:''}${r.commit?`<div class="small muted">Committed: ${esc(r.commit.text)}</div>`:''}</div>`).join('')}</div>`:''}
+  ${p.text||p.voice?`<div class="answer">${esc(p.text)}${voiceTag(p.voice)}</div>`:''}
+  ${p.commit?`<div class="small muted">Committed: ${esc(p.commit.text)}${voiceTag(p.commit.voice)}</div>`:''}
+  ${reps.length?`<div class="replies">${reps.map(r=>`<div class="reply"><div class="meta"><b>${esc(nm(r.by))}</b> joined in <span>+${r.pts}</span></div>${r.text||r.voice?`<div class="answer">${esc(r.text)}${voiceTag(r.voice)}</div>`:''}${r.commit?`<div class="small muted">Committed: ${esc(r.commit.text)}${voiceTag(r.commit.voice)}</div>`:''}</div>`).join('')}</div>`:''}
   ${canJoin?(ui.joinOpen===p.id?joinPanel(p)
     :`<div class="row"><button class="small" data-act="joinopen" data-arg="${p.id}">Join in on this card</button></div>`):''}</div>`;
 }
