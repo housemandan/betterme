@@ -258,14 +258,57 @@ function route(){
   const next=/^[a-z0-9]{8,20}$/.test(h)?h:null;
   if(next===gid&&(unGame||!next)){render();return}
   gid=next;game=null;posts=[];postsReady=false;seenFull=null;seenPosts=null;party=null;ui.joinOpen=null;ui.commitOpen=false;ui.pts=1;ui.msg='';
-  if(unGame)unGame();if(unPosts)unPosts();unGame=unPosts=null;
+  if(unGame)unGame();if(unPosts)unPosts();unGame=unPosts=null;stopChat();
   if(gid){
-    unGame=fs.collection('games').doc(gid).onSnapshot(s=>{game=s.exists?Object.assign({id:s.id},s.data()):false;render();maybeBot()},()=>{game=false;render()});
+    unGame=fs.collection('games').doc(gid).onSnapshot(s=>{game=s.exists?Object.assign({id:s.id},s.data()):false;render();maybeBot();syncChat()},()=>{game=false;render();syncChat()});
     unPosts=fs.collection('games').doc(gid).collection('posts').orderBy('at','asc').onSnapshot(s=>{posts=s.docs.map(d=>Object.assign({id:d.id},d.data()));postsReady=true;render();maybeBot()},()=>{});
   }
   render();
 }
 function openGame(id){location.hash=id?id:'home'}
+
+/* ---------- game chat (Dan, 2026-11-14) ----------
+   One group chat per game, players only. It lives in its own corner box (#chatdock), outside #main,
+   so the main page re-drawing never wipes what someone is typing. Closed by default: a small button with a "new" count. */
+let chat=[],unChat=null;ui.chatOpen=false;
+function chatOK(){return !!(gid&&game&&game.players&&game.players.includes(me)&&game.players.filter(p=>!isBot(p)).length>=2)}
+function stopChat(){if(unChat)unChat();unChat=null;chat=[];ui.chatOpen=false;renderChat()}
+function syncChat(){
+  if(!chatOK()){if(unChat)stopChat();else renderChat();return}
+  if(!unChat)unChat=fs.collection('games').doc(gid).collection('chat').orderBy('at','asc').limitToLast(200)
+    .onSnapshot(s=>{chat=s.docs.map(d=>Object.assign({id:d.id},d.data()));if(ui.chatOpen)chatMarkRead();renderChat()},e=>console.error(e));
+  renderChat();
+}
+function chatReadAt(){return Number(lsGet('bm_chatread_'+gid))||0}
+function chatMarkRead(){const last=chat.length?chat[chat.length-1].at||0:0;if(last>chatReadAt())lsSet('bm_chatread_'+gid,String(last))}
+function chatUnread(){const r=chatReadAt();return chat.filter(m=>m.by!==me&&(m.at||0)>r).length}
+function chatTime(t){if(!t)return '';const d=new Date(t),n=new Date();return d.toDateString()===n.toDateString()?d.toLocaleTimeString([], {hour:'numeric',minute:'2-digit'}):d.toLocaleDateString([], {month:'short',day:'numeric'})}
+function renderChat(){
+  let dock=$('#chatdock');
+  if(!chatOK()){if(dock)dock.remove();return}
+  if(!dock){dock=document.createElement('div');dock.id='chatdock';document.body.appendChild(dock)}
+  if(!ui.chatOpen){const n=chatUnread();
+    dock.innerHTML=`<button class="chatbtn" data-chat="open" aria-label="Open game chat">💬 Chat${n?` <span class="chatnew">${n} new</span>`:''}</button>`;return}
+  const box=$('#chatlist');const atBottom=!box||box.scrollHeight-box.scrollTop-box.clientHeight<40;
+  const draft=($('#chatin')||{}).value||'';const hadFocus=document.activeElement&&document.activeElement.id==='chatin';
+  dock.innerHTML=`<div class="chatbox" role="dialog" aria-label="Game chat"><div class="chathead"><b>💬 Game chat</b><span class="small muted">Everyone in this game sees it</span><button class="link" data-chat="close" aria-label="Close chat">✕</button></div>
+    <div id="chatlist">${chat.length?chat.map(m=>`<div class="chatmsg ${m.by===me?'mine':''}"><div class="chatmeta">${m.by===me?'You':esc(m.name||nameOf(m.by))} · ${chatTime(m.at)}</div><div class="chattext">${esc(m.text)}</div></div>`).join('')
+      :'<p class="small muted" style="text-align:center;margin:18px 0">No messages yet. Say hi 👋</p>'}</div>
+    <form class="chatform" data-chat="form"><input id="chatin" maxlength="500" autocomplete="off" placeholder="Write a message…"><button class="primary small" type="submit">Send</button></form></div>`;
+  const inp=$('#chatin');inp.value=draft;if(hadFocus)inp.focus();
+  const list=$('#chatlist');if(atBottom)list.scrollTop=list.scrollHeight;
+}
+async function sendChat(){
+  const inp=$('#chatin');const text=(inp.value||'').trim().slice(0,500);if(!text||!chatOK())return;
+  inp.value='';
+  try{await fs.collection('games').doc(gid).collection('chat').add({by:me,name:myName,text,at:Date.now()})}
+  catch(e){console.error(e);inp.value=text;alertChat('That didn’t send. Check your connection and try again.')}
+}
+function alertChat(t){const l=$('#chatlist');if(l){const p=document.createElement('p');p.className='small missmsg';p.textContent=t;l.appendChild(p);l.scrollTop=l.scrollHeight}}
+document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('[data-chat]');if(!b||b.tagName==='FORM')return;
+  if(b.dataset.chat==='open'){ui.chatOpen=true;chatMarkRead();renderChat();const i=$('#chatin');if(i)i.focus();const l=$('#chatlist');if(l)l.scrollTop=l.scrollHeight}
+  if(b.dataset.chat==='close'){ui.chatOpen=false;chatMarkRead();renderChat()}});
+document.addEventListener('submit',e=>{if(e.target&&e.target.dataset&&e.target.dataset.chat==='form'){e.preventDefault();sendChat()}});
 
 /* ---------- actions ---------- */
 async function act(fn){if(busy)return;busy=true;ui.msg='';try{await fn()}catch(e){console.error(e);ui.msg='That didn’t save. Check your connection and try again.'}busy=false;render()}
