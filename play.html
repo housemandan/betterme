@@ -409,7 +409,7 @@ async function sayRec(field){
   mr.onstop=async()=>{
     stream.getTracks().forEach(t=>t.stop());clearInterval(vRec.timer);
     const dur=Math.min(REC_MAX,recSecsV()),cancel=vRec.cancel,mime=mr.mimeType||type||'audio/webm';vRec=null;
-    if(cancel||dur<0.7||!chunks.length){refreshVoice();return}
+    if(cancel||dur<0.7||!chunks.length||!$('#'+field)){refreshVoice();return}
     /* (clips so far are kept; each new one is added on) */
     const prev=(ui.voice[field]&&ui.voice[field].clips)||[];ui.voice[field]={busy:true,clips:prev};refreshVoice();
     try{
@@ -447,7 +447,7 @@ async function playClip(id,btn){
 /* Saved posts keep a list of clips (older posts may hold a single {id,dur}). */
 function voiceTag(v){const a=Array.isArray(v)?v:(v&&v.id?[v]:[]);return a.map((c,i)=>` <button type="button" class="link voiceplay" data-say="play" data-arg="${esc(c.id)}">▶ Listen${a.length>1?' '+(i+1):''} (${fmtDur(c.dur)})</button>`).join('')}
 function takeVoice(field){const v=ui.voice[field];return v&&v.clips&&v.clips.length?v.clips.map(c=>({id:c.id,dur:Math.round(c.dur||0)})):null}
-function clearVoice(...fields){fields.forEach(f=>delete ui.voice[f])}
+function clearVoice(...fields){if(vRec&&fields.includes(vRec.field))sayStop(true);fields.forEach(f=>delete ui.voice[f])}
 document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('[data-say]');if(!b)return;e.preventDefault();
   const a=b.dataset.say,arg=b.dataset.arg;
   if(a==='rec')sayRec(arg);
