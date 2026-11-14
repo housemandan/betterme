@@ -120,6 +120,15 @@ button.heart.on{color:#d9334a;border-color:#d9334a66;background:#d9334a12}
   .party i{animation:sparkle 2.6s ease-in var(--d) forwards}
   @keyframes sparkle{0%{opacity:1;transform:translateY(0) rotate(45deg)}100%{opacity:0;transform:translateY(85vh) rotate(405deg)}}
 }
+/* Point chip: a round token in the category color that floats up and fades. */
+.chips{position:fixed;left:50%;bottom:22%;transform:translateX(-50%);z-index:49;pointer-events:none;display:flex;gap:14px}
+.ptchip{display:flex;flex-direction:column;align-items:center;gap:4px;opacity:0;animation:chipin 2.4s ease-out var(--d) forwards}
+.ptchip .coin{width:64px;height:64px;border-radius:50%;display:grid;place-items:center;font:800 1.5rem var(--body);color:#fff;
+  background:radial-gradient(circle at 35% 30%,color-mix(in srgb,var(--c) 55%,#fff),var(--c) 60%,color-mix(in srgb,var(--c) 75%,#000));
+  border:4px solid color-mix(in srgb,var(--c) 70%,#fff);box-shadow:0 6px 18px #0004,inset 0 -3px 0 #0002;text-shadow:0 1px 2px #0006}
+.ptchip .who{font-size:.85rem;font-weight:800;color:var(--fg);background:var(--surface);border-radius:999px;padding:2px 10px;box-shadow:0 2px 8px #0002}
+@keyframes chipin{0%{opacity:0;transform:translateY(30px) scale(.5)}15%{opacity:1;transform:translateY(0) scale(1.12)}25%{transform:scale(1)}75%{opacity:1;transform:translateY(-30px)}100%{opacity:0;transform:translateY(-70px)}}
+@media (prefers-reduced-motion:reduce){.ptchip{animation:none;opacity:1}}
 @media print{
   body.printsheet .sky,body.printsheet #main>*:not(#sheet),body.printsheet .noprint,body.printsheet #sheet .row{display:none!important}
   body.printsheet{background:#fff;color:#000}
@@ -212,7 +221,7 @@ function route(){
   const h=(location.hash||'').replace(/^#/,'');
   const next=/^[a-z0-9]{8,20}$/.test(h)?h:null;
   if(next===gid&&(unGame||!next)){render();return}
-  gid=next;game=null;posts=[];postsReady=false;seenFull=null;party=null;ui.joinOpen=null;ui.commitOpen=false;ui.pts=1;ui.msg='';
+  gid=next;game=null;posts=[];postsReady=false;seenFull=null;seenPosts=null;party=null;ui.joinOpen=null;ui.commitOpen=false;ui.pts=1;ui.msg='';
   if(unGame)unGame();if(unPosts)unPosts();unGame=unPosts=null;
   if(gid){
     unGame=fs.collection('games').doc(gid).onSnapshot(s=>{game=s.exists?Object.assign({id:s.id},s.data()):false;render();maybeBot()},()=>{game=false;render()});
@@ -338,6 +347,8 @@ function readCommit(){
   if(!ui.commitOpen)return null;
   const t=($('#c_text')||{}).value||'',partner=($('#c_partner')||{}).value||'',due=($('#c_due')||{}).value||'';
   if(!t.trim()){ui.msg='Write what you’re committing to, or untick the commitment box.';return false}
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(due)){ui.msg='Pick a check-in date for your commitment, so your partner knows when to ask.';return false}
+  if(due<new Date().toISOString().slice(0,10)){ui.msg='The check-in date can’t be in the past.';return false}
   return {text:t.trim().slice(0,500),partner,due,done:false};
 }
 /* Each card's points come from the master card list: [for sharing, extra for a commitment]. */
@@ -449,10 +460,29 @@ function celebration(){
     }
   }
   seenFull={gid,set:now};
-  if(!party)return '';
+  const chipHtml=pointChips();
+  if(!party)return chipHtml;
   const lines=party.items.map(({p,k})=>`<div class="partyline"><span class="gem big" style="--c:${col(k)}"></span><span><b>${esc(p===me?'You':nameOf(p))}</b> fulfilled <b style="color:${col(k)}">${CATS[k].name}</b>!</span></div>`).join('');
   return `<div class="party" role="status" aria-live="polite">${Array.from({length:18},(_,i)=>`<i style="--x:${(i*37)%100}%;--d:${(i%6)*0.12}s;--c:${col(KEYS[i%5])}"></i>`).join('')}
-    <div class="partybox">${lines}<button class="small" data-act="partyclose">Yay!</button></div></div>`;
+    <div class="partybox">${lines}<button class="small" data-act="partyclose">Yay!</button></div></div>`+chipHtml;
+}
+/* Small win: a round point chip ("+2 Mind", like the cardboard chips) floats up whenever someone earns points. */
+let seenPosts=null,chipTimer=null;
+function pointChips(){
+  const ids=new Set(posts.map(p=>p.id));
+  if(seenPosts&&seenPosts.gid===gid){
+    const fresh=posts.filter(p=>!seenPosts.ids.has(p.id)&&p.pts>0&&p.cat);
+    if(fresh.length){
+      /* Drawn in its own layer outside the page, so later screen refreshes don't restart the animation. */
+      let layer=document.getElementById('chiplayer');
+      if(!layer){layer=document.createElement('div');layer.id='chiplayer';document.body.appendChild(layer)}
+      layer.innerHTML=`<div class="chips" aria-live="polite">${fresh.slice(-3).map((p,i)=>`<div class="ptchip" style="--c:${col(p.cat)};--d:${i*0.25}s">
+        <span class="coin">+${p.pts}</span><span class="who">${esc(p.by===me?'You':nameOf(p.by))} · ${CATS[p.cat].name}</span></div>`).join('')}</div>`;
+      clearTimeout(chipTimer);chipTimer=setTimeout(()=>{layer.innerHTML=''},3200);
+    }
+  }
+  seenPosts={gid,ids};
+  return '';
 }
 function nameBox(){
   return `<section class="panel"><h2>${myName?'Change your name':'Welcome! What’s your first name?'}</h2>
@@ -538,7 +568,7 @@ function turnPanel(){
   <div style="display:${ui.commitOpen?'grid':'none'};gap:8px">
     <div class="field"><label for="c_text">What will you do?</label><input id="c_text" placeholder="e.g. Walk 10 minutes every day this week"></div>
     <div class="row"><div class="field" style="flex:1;min-width:160px"><label for="c_partner">Accountability partner</label><select id="c_partner">${others().map(o=>`<option value="${esc(o)}">${esc(nm(o))}</option>`).join('')}</select></div>
-    <div class="field" style="flex:1;min-width:160px"><label for="c_due">Check-in date</label><input type="date" id="c_due"></div></div>
+    <div class="field" style="flex:1;min-width:160px"><label for="c_due">Check-in date (needed)</label><input type="date" id="c_due" required min="${new Date().toISOString().slice(0,10)}"></div></div>
   </div>
   <div class="row"><button class="primary" data-act="post">Post and end my turn</button><button data-act="save">Save for later</button><button data-act="pass">Pass</button></div>
   <p class="small muted">No pressure: passing or saving a card is always fine.</p></section>`;
