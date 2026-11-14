@@ -249,7 +249,9 @@ const $=s=>document.querySelector(s);
 const JOINABLE=/all players|any player|everyone at the table|other players|each player/i;
 const APART=/close (your|their) eyes|one minute|1 minute|write down|at the table|smile at the other|clockwise|every player|show the group/i;
 
-let fs=null,me=null,myName='';
+let fs=null,me=null,AUTH=null,myName='';
+/* AUTH = this browser's own sign-in. me = the player seat it plays as in the open game (a linked device plays as its owner's seat). */
+function seatOf(g){return (g&&g.devices&&g.devices[AUTH])||AUTH}
 let gid=null,game=null,myGames=[],posts=[],sugg=[],cardStats={};
 let postsReady=false;
 let unGame=null,unPosts=null,busy=false,ui={joinOpen:null,commitOpen:false,pts:1,msg:'',suggOpen:false,editName:false};
@@ -259,7 +261,7 @@ function lsSet(k,v){try{localStorage.setItem(k,v)}catch(e){}}
 function cardText(c,i){const d=DECKS[c];return d&&d[i]!=null?d[i]:'(card not found)'}
 function others(){return game?game.players.filter(p=>p!==me):[]}
 function nameOf(id,g){g=g||game;if(g&&g.names&&g.names[id])return g.names[id];for(const x of myGames){if(x.names&&x.names[id])return x.names[id]}return 'Player'}
-function nm(id,g){return id===me?'You':nameOf(id,g)}
+function nm(id,g){g=g||game;return id===(g&&g.id===gid?me:seatOf(g))?'You':nameOf(id,g)}
 function scores(list){
   const s={};(game?game.players:[]).forEach(p=>s[p]={H:0,M:0,B:0,P:0,T:0});
   (list||posts).forEach(x=>{if(s[x.by]&&x.cat&&x.pts>0)s[x.by][x.cat]+=x.pts});
@@ -277,11 +279,14 @@ function show(h){$('#main').innerHTML=`<section class="panel">${h}</section>`}
 async function boot(){
   if(!FIREBASE_CONFIG||!window.firebase){show(`<h2>Almost ready</h2><p class="muted">The online game is being set up. Check back soon.</p>`);return}
   firebase.initializeApp(FIREBASE_CONFIG);fs=firebase.firestore();
-  try{const cred=await firebase.auth().signInAnonymously();me=cred.user.uid}
+  try{const cred=await firebase.auth().signInAnonymously();AUTH=me=cred.user.uid}
   catch(e){show(`<h2>Can't connect</h2><p class="muted">Check your internet connection and reload the page.</p>`);return}
   myName=lsGet('bm_name');
   window.addEventListener('hashchange',route);
-  fs.collection('games').where('players','array-contains',me).onSnapshot(s=>{myGames=s.docs.map(d=>Object.assign({id:d.id},d.data()));render()},()=>{});
+  /* My games = games this browser joined, plus games it was linked into from another device. */
+  const lists={a:[],b:[]};const merge=()=>{const m=new Map();lists.a.concat(lists.b).forEach(g=>m.set(g.id,g));myGames=[...m.values()];render()};
+  fs.collection('games').where('players','array-contains',AUTH).onSnapshot(s=>{lists.a=s.docs.map(d=>Object.assign({id:d.id},d.data()));merge()},()=>{});
+  fs.collection('games').where('deviceList','array-contains',AUTH).onSnapshot(s=>{lists.b=s.docs.map(d=>Object.assign({id:d.id},d.data()));merge()},()=>{});
   fs.collection('cards').onSnapshot(s=>{const o={};s.docs.forEach(d=>o[d.id]=d.data());cardStats=o;render()},()=>{});
   fs.collection('suggestions').orderBy('at','desc').limit(200).onSnapshot(s=>{sugg=s.docs.map(d=>Object.assign({id:d.id},d.data()));render()},()=>{});
   route();
@@ -290,10 +295,10 @@ function route(){
   const h=(location.hash||'').replace(/^#/,'');
   const next=/^[a-z0-9]{8,20}$/.test(h)?h:null;
   if(next===gid&&(unGame||!next)){render();return}
-  gid=next;game=null;posts=[];postsReady=false;seenFull=null;seenPosts=null;party=null;ui.joinOpen=null;ui.commitOpen=false;ui.pts=1;ui.msg='';
+  gid=next;game=null;me=AUTH;posts=[];postsReady=false;seenFull=null;seenPosts=null;party=null;ui.joinOpen=null;ui.commitOpen=false;ui.pts=1;ui.msg='';
   if(unGame)unGame();if(unPosts)unPosts();unGame=unPosts=null;stopChat();
   if(gid){
-    unGame=fs.collection('games').doc(gid).onSnapshot(s=>{const before=game;game=s.exists?Object.assign({id:s.id},s.data()):false;render();maybeBot();syncChat();
+    unGame=fs.collection('games').doc(gid).onSnapshot(s=>{const before=game;game=s.exists?Object.assign({id:s.id},s.data()):false;me=game?seatOf(game):AUTH;render();maybeBot();syncChat();
       /* This browser just moved the turn on (posted, skipped, started, removed someone): ask the alert sender to tell whoever is up. */
       if(s.metadata.hasPendingWrites&&game&&before&&game.status==='playing'&&(before.turn!==game.turn||before.status!=='playing'||before.players.length!==game.players.length))pingTurn()},()=>{game=false;render();syncChat()});
     unPosts=fs.collection('games').doc(gid).collection('posts').orderBy('at','asc').onSnapshot(s=>{posts=s.docs.map(d=>Object.assign({id:d.id},d.data()));postsReady=true;render();maybeBot()},()=>{});
@@ -301,6 +306,39 @@ function route(){
   render();
 }
 function openGame(id){location.hash=id?id:'home'}
+
+/* ---------- same player, another device (Dan, 2026-11-14) ----------
+   Each browser has its own sign-in, so opening a game on a second phone/browser looked like a new person.
+   Now the new browser can ask to continue as an existing player; that player's other device (or the host) taps Yes.
+   The game then lists the new browser under devices/deviceList, and it plays as that seat. */
+const FVx=()=>firebase.firestore.FieldValue;
+function claimBox(){
+  if(!game||game.players.includes(me))return '';
+  const humans=game.players.filter(p=>!isBot(p));if(!humans.length)return '';
+  const mine=(game.claims||{})[AUTH];
+  if(mine)return `<section class="panel"><h2>Waiting for a yes 👋</h2><p>You asked to continue as <b>${esc(nameOf(mine.seat))}</b> on this device.
+    Open this game on your other phone or browser and tap <b>Yes</b>${game.host&&game.host!==mine.seat?`, or ask <b>${esc(nameOf(game.host))}</b> (the host) to tap it`:''}. This page updates by itself.</p>
+    <div class="row"><button class="small" data-act="claimcancel">Cancel</button></div></section>`;
+  return `<section class="panel"><h2>Already in this game on another device?</h2>
+    <p class="muted">If you joined from another phone or browser (or from a chat app), you can keep playing here as the same player.</p>
+    <div class="row"><div class="field" style="flex:1;min-width:160px;margin:0"><label for="claimseat">I’m…</label><select id="claimseat">${humans.map(p=>`<option value="${esc(p)}">${esc(nameOf(p))}</option>`).join('')}</select></div>
+    <button class="primary" data-act="claimask" style="align-self:flex-end">Continue as me here</button></div></section>`;
+}
+function approvalBox(){
+  if(!game||!game.players.includes(me))return '';
+  const list=Object.entries(game.claims||{}).filter(([u,c])=>c&&u!==AUTH&&game.players.includes(c.seat)&&(c.seat===me||game.host===me));
+  return list.map(([u,c])=>`<section class="panel" style="border:2px solid var(--hintLine);background:var(--hintBg);color:var(--hintFg)">
+    <h2 style="color:inherit">📱 Continue as ${c.seat===me?'you':esc(nameOf(c.seat))} on another device?</h2>
+    <p>Someone${c.name?` (named “${esc(c.name)}” there)`:''} wants to play as <b>${esc(nameOf(c.seat))}</b> from another phone or browser.
+    ${c.seat===me?'If that’s you on your other device, tap Yes.':`If that’s really ${esc(nameOf(c.seat))} (for example they opened the link twice), tap Yes.`}</p>
+    <div class="row"><button class="primary" data-act="claimyes" data-arg="${esc(u)}">Yes, that’s ${c.seat===me?'me':esc(nameOf(c.seat))}</button><button class="small" data-act="claimno" data-arg="${esc(u)}">No</button></div></section>`).join('');
+}
+async function claimAsk(){const seat=($('#claimseat')||{}).value;if(!seat||!game.players.includes(seat))return;
+  await G().update({['claims.'+AUTH]:{seat,name:myName||'',at:Date.now()}})}
+async function claimCancel(){await G().update({['claims.'+AUTH]:FVx().delete()})}
+async function claimYes(u){const c=(game.claims||{})[u];if(!c||!(c.seat===me||game.host===me)||!game.players.includes(c.seat))return;
+  await G().update({['devices.'+u]:c.seat,deviceList:FVx().arrayUnion(u),['claims.'+u]:FVx().delete()})}
+async function claimNo(u){await G().update({['claims.'+u]:FVx().delete()})}
 
 /* ---------- turn alerts (Dan, 2026-11-14) ----------
    Off until a player taps "Turn on" (one per phone/computer). A free Cloudflare Worker (build/push-worker.js) sends them.
@@ -603,11 +641,11 @@ function dupNames(){const seen={},d=[];game.players.forEach(p=>{const n=(nameOf(
 function dupNote(){const d=dupNames();if(!d.length||game.host!==me)return '';
   return `<div class="note small">👀 ${d.map(esc).join(', ')} shows up twice. That's usually one person who opened the link in two browsers. Remove the extra one${game.status==='lobby'?' before you start':' in Host tools below'}.</div>`}
 function hearts(c,i){const s=cardStats[cardId(c,i)];return (s&&s.hearts)||[]}
-function iHeart(c,i){return hearts(c,i).includes(me)}
+function iHeart(c,i){return hearts(c,i).includes(AUTH)}
 function inMyDeck(c,i){return !(OFFLINE[c]||[]).includes(i)||iHeart(c,i)}
 async function toggleHeart(c,i){
   const FV=firebase.firestore.FieldValue;
-  await fs.collection('cards').doc(cardId(c,i)).set({hearts:iHeart(c,i)?FV.arrayRemove(me):FV.arrayUnion(me)},{merge:true});
+  await fs.collection('cards').doc(cardId(c,i)).set({hearts:iHeart(c,i)?FV.arrayRemove(AUTH):FV.arrayUnion(AUTH)},{merge:true});
 }
 function heartBtn(c,i){
   if(c==null||i==null)return '';const n=hearts(c,i).length;const on=iHeart(c,i);
@@ -767,7 +805,7 @@ async function endNow(){
 async function addSuggestion(){
   const text=(($('#s_text')||{}).value||'').trim();const topic=($('#s_topic')||{}).value||'Rules';
   if(!text){ui.msg='Write your suggestion first.';return}
-  const s={by:me,name:myName,text:text.slice(0,2000),topic,at:Date.now(),plus:[]};
+  const s={by:AUTH,name:myName,text:text.slice(0,2000),topic,at:Date.now(),plus:[]};
   const p=game&&game.pending;if(($('#s_card')||{}).checked&&p&&p.cat)Object.assign(s,{cat:p.cat,idx:p.idx});
   await fs.collection('suggestions').add(s);
   const e=$('#s_text');if(e)e.value='';ui.msg='Thanks! Your suggestion is saved.';ui.suggOpen=true;
@@ -775,7 +813,7 @@ async function addSuggestion(){
 async function plusOne(id){
   const s=sugg.find(x=>x.id===id);if(!s||s.by===me)return;
   const FV=firebase.firestore.FieldValue;
-  await fs.collection('suggestions').doc(id).update({plus:(s.plus||[]).includes(me)?FV.arrayRemove(me):FV.arrayUnion(me)});
+  await fs.collection('suggestions').doc(id).update({plus:(s.plus||[]).includes(AUTH)?FV.arrayRemove(AUTH):FV.arrayUnion(AUTH)});
 }
 function copyText(txt,okMsg,fallbackId){
   navigator.clipboard.writeText(txt).then(()=>{ui.msg=okMsg;render()},()=>{const e=$('#'+fallbackId);if(e)e.select();ui.msg='Copy this: '+txt;render()});
@@ -865,11 +903,11 @@ function view(){
   if(game===null)return msg+`<section class="panel"><p class="muted">Loading the game…</p></section>`;
   if(game===false)return msg+`<section class="panel"><h2>Game not found</h2><p class="muted">Check the link, or ask your friend to send it again.</p><div class="row"><button data-act="home">My games</button></div></section>`;
   const bar=`<div class="spread"><button class="link" data-act="home">← My games</button><h2>${esc(game.name||'Game')}</h2></div>`;
-  if(game.status==='lobby')return msg+who+bar+alertsRow()+lobby()+rulesBox()+suggestBox();
+  if(game.status==='lobby')return msg+approvalBox()+claimBox()+who+bar+alertsRow()+lobby()+rulesBox()+suggestBox();
   const party=celebration();
   /* Game over (Dan, 2026-11-14): the winner box is the very first thing, the game sheet right under it, then everything else. */
-  if(game.status==='over')return msg+winnerBox()+commitsPanel()+party+scoreboard()+feed()+bar+who+suggestBox()+rulesBox();
-  return party+msg+who+bar+alertsRow()+scoreboard()+turnPanel()+commitsPanel()+feed()+suggestBox()+rulesBox()+hostBox();
+  if(game.status==='over')return msg+approvalBox()+claimBox()+winnerBox()+commitsPanel()+party+scoreboard()+feed()+bar+who+suggestBox()+rulesBox();
+  return party+msg+approvalBox()+claimBox()+who+bar+alertsRow()+scoreboard()+turnPanel()+commitsPanel()+feed()+suggestBox()+rulesBox()+hostBox();
 }
 /* When someone fills a category: a gem appears on the scoreboard and everyone watching sees a short celebration.
    Only fires for fills that happen while the page is open (not for old ones when you first load the game). */
@@ -921,10 +959,10 @@ function statusLine(g){
   if(g.status==='lobby')return `Waiting for players (${g.players.length}/${MAXP})`;
   if(g.status==='over')return `Finished · ${esc(nm(g.winner,g))} won`;
   const cur=g.players[g.turn%g.players.length];
-  return cur===me?'<b style="color:var(--fg)">Your turn!</b>':`Waiting for ${esc(nm(cur,g))}`;
+  return cur===seatOf(g)?'<b style="color:var(--fg)">Your turn!</b>':`Waiting for ${esc(nm(cur,g))}`;
 }
 function home(){
-  const rank=g=>g.status==='playing'&&g.players[g.turn%g.players.length]===me?0:g.status==='over'?2:1;
+  const rank=g=>g.status==='playing'&&g.players[g.turn%g.players.length]===seatOf(g)?0:g.status==='over'?2:1;
   const mine=myGames.slice().sort((a,b)=>rank(a)-rank(b)||(b.lastMoveAt||0)-(a.lastMoveAt||0));
   return `<section class="panel"><h2>Start a new game</h2>
   <div class="row"><div class="field" style="flex:1;min-width:200px"><label for="newname">Game name</label><input id="newname" maxlength="60" placeholder="e.g. Dan & Russell"></div>
@@ -966,7 +1004,7 @@ function cardBox(cat,idx,extra){
 function turnPanel(){
   if(game.status==='over')return `<section class="panel"><h2>Game over</h2><p class="muted">Keep checking off your commitments below. Start a new game any time from "My games".</p></section>`;
   const cur=curPlayer();
-  if(!game.players.includes(me))return `<section class="panel"><h2>${esc(nm(cur))} is up</h2><p class="muted">This game already started, so you’re watching. Ask a friend to start a new one with you.</p></section>`;
+  if(!game.players.includes(me))return `<section class="panel"><h2>${esc(nm(cur))} is up</h2><p class="muted">This game already started, so you’re watching. Already a player on another device? Use the box at the top.</p></section>`;
   if(!myTurn()&&isBot(cur))return `<section class="panel" id="waitbox"><h2>${esc(nm(cur))} is taking a turn…</h2><p class="muted">Computer players move by themselves in a couple of seconds.</p></section>`;
   if(!myTurn()){
     const days=game.lastMoveAt?Math.max(0,Math.floor((Date.now()-game.lastMoveAt)/86400000)):0;
@@ -1163,7 +1201,7 @@ function suggestBox(){
   ${p?`<label class="row" style="color:var(--fg)"><input type="checkbox" id="s_card" style="width:auto"> It’s about the ${CATS[p.cat].name} card I’m on now</label>`:''}
   <div class="field"><label for="s_text">Your suggestion</label><textarea id="s_text" rows="3" placeholder="e.g. A new card idea, or a rule that slowed us down"></textarea></div>
   <div class="row"><button class="primary small" data-act="suggest">Send suggestion</button></div>
-  ${list.length?`<div class="feed" style="margin-top:8px">${list.map(s=>{const n=(s.plus||[]).length;const mine=(s.plus||[]).includes(me);
+  ${list.length?`<div class="feed" style="margin-top:8px">${list.map(s=>{const n=(s.plus||[]).length;const mine=(s.plus||[]).includes(AUTH);
     return `<div class="post"><div class="meta"><b>${esc(s.by===me?'You':(s.name||'Player'))}</b><span>${esc(s.topic||'')}</span>${s.cat?`<span class="chip" style="background:${col(s.cat)}">${CATS[s.cat].name} card</span>`:''}<span>${new Date(s.at).toLocaleDateString(undefined,{month:'short',day:'numeric'})}</span></div>
     <div class="answer">${esc(s.text)}</div>
     ${s.cat?`<details class="qline"><summary class="small" style="font-family:var(--body);font-weight:500">The card</summary>${esc(cardText(s.cat,s.idx))}</details>`:''}
@@ -1223,7 +1261,7 @@ document.addEventListener('click',e=>{
   if(a==='copylink'){copyText(SITE_URL+'#'+gid,'Link copied. Paste it into WhatsApp, Messenger or LINE.','roomlink');return}
   if(a==='nudge'){copyText(`${nameOf(curPlayer())}, it’s your turn in Better Me (${game.name||'our game'})! ${SITE_URL}#${gid}`,'Copied. Paste it into WhatsApp, Messenger, LINE or a text.','');return}
   const map={savename:saveName,new:newGame,join:joinGame,spin,pass:passCard,save:saveCard,post:postAnswer,skip:skipTurn,endnow:endNow,
-    suggest:addSuggestion,practice:newPractice,plus:()=>plusOne(arg),remove:()=>removePlayer(arg),alertson:alertsEnable,alertsoff:alertsDisable,
+    suggest:addSuggestion,practice:newPractice,plus:()=>plusOne(arg),remove:()=>removePlayer(arg),claimask:claimAsk,claimcancel:claimCancel,claimyes:()=>claimYes(arg),claimno:()=>claimNo(arg),alertson:alertsEnable,alertsoff:alertsDisable,
     start:()=>startGame(+(($('#target')||{}).value||2)),choose:()=>choose(arg),playsaved:()=>playSaved(+arg),
     joinpost:()=>joinIn(arg),done:()=>markDone(arg),ffpost:()=>postFF(arg),note:()=>addNote(arg),asknote:()=>{const p=posts.find(x=>x.id===arg);return addNote(arg,p?`How’s it going with: ${p.commit.text}?`:'')},heart:()=>{const [c,i]=arg.split(':');return toggleHeart(c,+i)}};
   if(map[a])act(map[a]);
