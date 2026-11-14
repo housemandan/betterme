@@ -343,7 +343,7 @@ async function claimNo(u){await G().update({['claims.'+u]:FVx().delete()})}
 /* ---------- turn alerts (Dan, 2026-11-14) ----------
    Off until a player taps "Turn on" (one per phone/computer). A free Cloudflare Worker (build/push-worker.js) sends them.
    iPhones only allow alerts once Better Me is added to the Home Screen, so they get that tip first. */
-const PUSH_URL='';
+const PUSH_URL='https://betterme-alerts.housemandan.workers.dev';
 const isIOS=/iPad|iPhone|iPod/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
 const isStandalone=()=>window.matchMedia('(display-mode: standalone)').matches||navigator.standalone===true;
 function alertsSupported(){return !!(PUSH_URL&&'serviceWorker' in navigator&&'PushManager' in window&&'Notification' in window)}
@@ -380,7 +380,7 @@ function alertsRow(){
    Any answer or commitment box gets a "🎤 Say it" button. The recording is saved (games/{id}/audio, same as chat
    voice messages) and typed out by the free Whisper model on our Cloudflare Worker, straight into the box,
    where the player can fix any wrong words. The post keeps both: the text (for reading and the game sheet) and a ▶ play button. */
-const VOICE_SEL='#ans,#c_text,#jc_text,textarea[id^="j_"]';
+const VOICE_SEL='#ans,#c_text,#jc_text,textarea[id^="j_"],input[id^="n_"]';const MAX_CLIPS=5; /* up to 5 one-minute clips per box */
 ui.voice={};let vRec=null;
 function voiceOK(){return !!(PUSH_URL&&canRecord()&&game&&gid&&game.players&&game.players.includes(me))}
 function applyVoice(){
@@ -391,7 +391,7 @@ function applyVoice(){
     const row=document.createElement('div');row.className='sayrow small';
     row.innerHTML=rec?`<span class="recdot" aria-hidden="true"></span><b class="saytime">Recording ${fmtDur(recSecsV())} / 1:00</b><button type="button" class="small primary" data-say="stop" data-arg="${id}">Done</button><button type="button" class="small" data-say="cancel" data-arg="${id}">Cancel</button>`
       :v.busy?`<span>✍️ Typing out what you said…</span>`
-      :v.id?`<span>🎤 Voice saved (${fmtDur(v.dur)})</span><button type="button" class="link" data-say="play" data-arg="${v.id}">▶ Play</button><button type="button" class="link" data-say="remove" data-arg="${id}">Remove</button>${v.note?`<span class="muted">${esc(v.note)}</span>`:''}`
+      :(v.clips&&v.clips.length)?`${v.clips.map((c,i)=>`<button type="button" class="link" data-say="play" data-arg="${c.id}">▶ ${v.clips.length>1?'Clip '+(i+1)+' ':''}(${fmtDur(c.dur)})</button>`).join('')}${v.clips.length<MAX_CLIPS?`<button type="button" class="small sayit" data-say="rec" data-arg="${id}">🎤 Add more</button>`:''}<button type="button" class="link" data-say="remove" data-arg="${id}">Remove voice</button>${v.note?`<span class="muted">${esc(v.note)}</span>`:''}`
       :`<button type="button" class="small sayit" data-say="rec" data-arg="${id}">🎤 Say it</button><span class="muted">or type it</span>`;
     box.appendChild(row);
   });
@@ -410,7 +410,8 @@ async function sayRec(field){
     stream.getTracks().forEach(t=>t.stop());clearInterval(vRec.timer);
     const dur=Math.min(REC_MAX,recSecsV()),cancel=vRec.cancel,mime=mr.mimeType||type||'audio/webm';vRec=null;
     if(cancel||dur<0.7||!chunks.length){refreshVoice();return}
-    ui.voice[field]={busy:true,dur};refreshVoice();
+    /* (clips so far are kept; each new one is added on) */
+    const prev=(ui.voice[field]&&ui.voice[field].clips)||[];ui.voice[field]={busy:true,clips:prev};refreshVoice();
     try{
       const data=await new Promise(r=>{const fr=new FileReader();fr.onload=()=>r(fr.result);fr.readAsDataURL(new Blob(chunks,{type:mime}))});
       if(data.length>900000)throw new Error('too big');
@@ -421,8 +422,8 @@ async function sayRec(field){
       if(!text)note='Couldn’t type it out, but your voice is saved. Add a few words if you like.';
       const el=$('#'+field);
       if(el&&text){el.value=(el.value.trim()?el.value.trim()+' ':'')+text;el.dispatchEvent(new Event('input',{bubbles:true}))}
-      ui.voice[field]={id:ref.id,dur,note};
-    }catch(e){console.error(e);ui.voice[field]={note:'That recording didn’t save. Try again, or type it.'}}
+      ui.voice[field]={clips:prev.concat({id:ref.id,dur}),note};
+    }catch(e){console.error(e);ui.voice[field]={clips:prev,note:'That recording didn’t save. Try again, or type it.'}}
     refreshVoice();
   };
   mr.start(1000);
@@ -443,8 +444,9 @@ async function playClip(id,btn){
     const a=new Audio(data);clip={id,a,btn};a.onended=()=>{if(clip&&clip.id===id){btn.textContent=btn.textContent.replace('⏸','▶');clip=null}};await a.play();
   }catch(e){console.error(e);btn.textContent=btn.textContent.replace('⏸','▶');clip=null}
 }
-function voiceTag(v){return v&&v.id?` <button type="button" class="link voiceplay" data-say="play" data-arg="${esc(v.id)}">▶ Listen (${fmtDur(v.dur)})</button>`:''}
-function takeVoice(field){const v=ui.voice[field];return v&&v.id?{id:v.id,dur:Math.round(v.dur||0)}:null}
+/* Saved posts keep a list of clips (older posts may hold a single {id,dur}). */
+function voiceTag(v){const a=Array.isArray(v)?v:(v&&v.id?[v]:[]);return a.map((c,i)=>` <button type="button" class="link voiceplay" data-say="play" data-arg="${esc(c.id)}">▶ Listen${a.length>1?' '+(i+1):''} (${fmtDur(c.dur)})</button>`).join('')}
+function takeVoice(field){const v=ui.voice[field];return v&&v.clips&&v.clips.length?v.clips.map(c=>({id:c.id,dur:Math.round(c.dur||0)})):null}
 function clearVoice(...fields){fields.forEach(f=>delete ui.voice[f])}
 document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('[data-say]');if(!b)return;e.preventDefault();
   const a=b.dataset.say,arg=b.dataset.arg;
