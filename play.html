@@ -20,16 +20,19 @@
   --teal:#13879a; --lav:#7a66d6; --accentFg:#ffffff; --danger:#c2410c;
   --space1:#140d36; --space2:#2f1f72; --space3:#1b5f7a;
   --cardBg:#ffffff; --cardFg:#1a1a1a;
+  --hintBg:#fff6cc; --hintLine:#f0c43a; --hintFg:#6b4e00;
   --H:#e0605a; --M:#9a6bd8; --B:#4f86d9; --P:#45ad4a; --T:#d9a21b; --FF:#7d86a3; --HH:#22a99a;
   --display:"Cinzel",Georgia,serif; --body:"Nunito Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
   color-scheme:light;
 }
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
   --bg:#120d2c; --surface:#1c1640; --surface2:#28205a; --fg:#efecff; --muted:#aba3d6; --line:#352b70;
-  --teal:#3cc0d1; --lav:#a596f0; --accentFg:#0e0a24; --danger:#fb923c; color-scheme:dark}}
+  --teal:#3cc0d1; --lav:#a596f0; --accentFg:#0e0a24; --danger:#fb923c; color-scheme:dark;
+  --hintBg:#3b3212; --hintLine:#e9c14a; --hintFg:#ffe39a}}
 :root[data-theme="dark"]{
   --bg:#120d2c; --surface:#1c1640; --surface2:#28205a; --fg:#efecff; --muted:#aba3d6; --line:#352b70;
-  --teal:#3cc0d1; --lav:#a596f0; --accentFg:#0e0a24; --danger:#fb923c; color-scheme:dark}
+  --teal:#3cc0d1; --lav:#a596f0; --accentFg:#0e0a24; --danger:#fb923c; color-scheme:dark;
+  --hintBg:#3b3212; --hintLine:#e9c14a; --hintFg:#ffe39a}
 *{box-sizing:border-box}
 html,body{margin:0}
 body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:16px;line-height:1.55}
@@ -69,10 +72,20 @@ input,textarea,select{font:inherit;color:var(--fg);background:var(--bg);border:1
 textarea{resize:vertical}
 label{font-size:.88rem;font-weight:700;color:var(--muted)}
 .field{display:flex;flex-direction:column;gap:4px}
-.field.missing input,.field.missing select,.field.missing textarea{border-color:#e0605a;box-shadow:0 0 0 3px rgba(224,96,90,.25);animation:nudge .35s ease 2}
-.field.missing label{color:#e0605a;font-weight:700}
-.missmsg{color:#e0605a;font-size:.85rem;font-weight:600}
-@keyframes nudge{0%,100%{transform:translateX(0)}25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
+/* Friendly helper look (warm yellow): fields still to fill, and beginner tip bubbles. Never red: nothing is "wrong". */
+.field.missing input,.field.missing select,.field.missing textarea{border-color:var(--hintLine);background:var(--hintBg);box-shadow:0 0 0 3px var(--hintLine)}
+.field.missing label{color:var(--hintFg);font-weight:700}
+.missmsg{color:var(--hintFg);font-size:.9rem;font-weight:700}
+.tip{position:relative;background:var(--hintBg);border:2px solid var(--hintLine);color:var(--hintFg);border-radius:14px;padding:10px 14px;margin:2px 0 12px;font-weight:600;animation:tipin .35s ease both}
+.tip::after{content:'';position:absolute;left:30px;bottom:-9px;width:14px;height:14px;background:var(--hintBg);border-right:2px solid var(--hintLine);border-bottom:2px solid var(--hintLine);transform:rotate(45deg)}
+.tip .tiprow{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+.tip button{padding:5px 12px;font-size:.85rem;font-weight:700}
+.tip button.tipok{background:var(--hintLine);color:#3a2a00;border-color:var(--hintLine)}
+.tip button.tipoff{background:transparent;color:var(--hintFg);border-color:var(--hintLine)}
+.tipglow{outline:3px solid var(--hintLine);outline-offset:4px;border-radius:12px;animation:tipglow 2s ease-in-out infinite}
+@keyframes tipin{from{opacity:0;transform:translateY(4px)}}
+@keyframes tipglow{50%{outline-color:transparent}}
+@media (prefers-reduced-motion: reduce){.tip,.tipglow{animation:none}}
 .muted{color:var(--muted)}
 .small{font-size:.88rem}
 .note{background:var(--surface2);border-radius:12px;padding:10px 12px;font-size:.95rem}
@@ -379,6 +392,7 @@ async function postFF(cat){
   const p=game.pending;if(!myTurn()||!p||!p.ff||!KEYS.includes(cat))return;
   const post={by:me,cat,card:'FF',idx:p.idx,text:((($('#ans')||{}).value)||'').trim().slice(0,4000),pts:1,kind:'turn',at:Date.now()};
   await POSTS().add(post);
+  tipsTurnDone();
   const r=checkEnd(posts.concat(post));
   if(r.winners.length)await G().update({status:'over',winner:r.winners[0],pending:null,lastMoveAt:Date.now()});
   else await G().update(nextTurnPatch());
@@ -405,9 +419,9 @@ function readCommit(){
   clearFlags();
   const t=($('#c_text')||{}).value||'',partner=($('#c_partner')||{}).value||'',due=($('#c_due')||{}).value||'';
   const today=new Date().toISOString().slice(0,10);let first=null;
-  if(!t.trim()){flagField('#c_text','Write what you’ll do (or untick “I’m making a commitment”).');first=first||'#c_text'}
-  if(!/^\d{4}-\d{2}-\d{2}$/.test(due)){flagField('#c_due','Pick a check-in date, so your partner knows when to ask.');first=first||'#c_due'}
-  else if(due<today){flagField('#c_due','The check-in date can’t be in the past.');first=first||'#c_due'}
+  if(!t.trim()){flagField('#c_text','👆 Almost there! Write one small thing you’ll do (or untick “I’m making a commitment”).');first=first||'#c_text'}
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(due)){flagField('#c_due','👆 Pick a check-in date, so your partner knows when to cheer you on.');first=first||'#c_due'}
+  else if(due<today){flagField('#c_due','👆 Pick today or a day coming up.');first=first||'#c_due'}
   if(first){const el=$(first);el.scrollIntoView({behavior:'smooth',block:'center'});el.focus({preventScroll:true});return false}
   return {text:t.trim().slice(0,500),partner,due,done:false};
 }
@@ -430,6 +444,7 @@ async function postAnswer(){
   let gift=null;
   if(p.hh){const to=($('#hh_to')||{}).value;if(to&&game.players.includes(to)&&to!==me){gift=to;post.helped=to}}
   await POSTS().add(post);
+  tipsTurnDone();
   const r=checkEnd(posts.concat(post));
   const extra=gift?{['saved.'+gift]:((game.saved||{})[gift]||[]).concat({gift:true,from:me})}:{};
   if(r.winners.length)await G().update({status:'over',winner:r.winners[0],pending:null,lastMoveAt:Date.now()});
@@ -492,7 +507,64 @@ function render(){
   const keep=snapshotInputs();
   $('#main').outerHTML=`<div id="main" style="display:contents">${view()}</div>`;
   restoreInputs(keep);
+  applyTip();
 }
+/* ---------- beginner tips: one small yellow bubble pointing at the next thing to do ----------
+   On by default. Basic turn tips show for a player's first 3 turns; "first time" tips (wild pick,
+   Fall Forward, commitment, Helping Hand, waiting, being a partner) show once each. Remembered per browser.
+   "I've played before" turns them all off; the switch in How to play turns them back on. */
+const TIP_BASIC_TURNS=3;
+function tipsOn(){return lsGet('bm_tips')!=='off'}
+function tipSeen(){try{return new Set(JSON.parse(lsGet('bm_tipseen')||'[]'))}catch(e){return new Set()}}
+function tipTurns(){return Number(lsGet('bm_turns'))||0}
+ui.tipSkips=new Set();ui.tipShown=new Set();
+function tipsTurnDone(){
+  lsSet('bm_turns',String(tipTurns()+1));
+  const s=tipSeen();ui.tipShown.forEach(k=>s.add(k));lsSet('bm_tipseen',JSON.stringify([...s]));ui.tipShown.clear();
+}
+function pickTip(){
+  if(!tipsOn()||!game||game.status!=='playing'||!game.players.includes(me))return null;
+  const basic=tipTurns()<TIP_BASIC_TURNS,seen=tipSeen();
+  const once=k=>!seen.has(k);
+  const val=s=>((($(s)||{}).value)||'').trim();
+  if(!myTurn()){
+    const partnerOf=posts.find(p=>p.commit&&p.commit.partner===me&&p.by!==me);
+    if(partnerOf&&once('partner')&&$('#sheet'))return {id:'partner',once:'partner',at:'#sheet',
+      text:`You’re ${esc(nameOf(partnerOf.by))}’s accountability partner! Their commitment and check-in date are on your game sheet. A friendly check-in on that day helps them follow through.`};
+    if(once('wait')&&$('#waitbox'))return {id:'wait',once:'wait',at:'#waitbox',
+      text:'While you wait: their answer will show up below when they post. Some cards welcome everyone, so you can tap “Join in” and earn points too.'};
+    return null;
+  }
+  const p=game.pending;
+  if(!p)return basic?{id:'spin',at:'[data-act="spin"]',glow:'[data-act="spin"]',text:'Your turn! Tap Spin to find out which part of life you’ll grow in.'}:null;
+  if(p.choose)return (basic||once('choose'))?{id:'choose',once:'choose',at:'.catpick',text:'Pick any category you like. A gem means you’ve already filled it, and that’s fine to pick too.'}:null;
+  if(p.ff)return (basic||once('ff'))?{id:'ff',once:'ff',at:'#ans',text:'Fall Forward! Share a setback that made you stronger (type it or say it), then tap any category below to take 1 point.'}:null;
+  const key=p.cat+p.idx;
+  if(ui.commitOpen&&(basic||once('commit'))){
+    const empty=!val('#c_text')?'#c_text':!val('#c_due')?'#c_due':null;
+    if(empty)return {id:'commit:'+key,once:'commit',at:empty,glow:empty,
+      text:empty==='#c_text'?'Nice! Write one small, doable step. Then pick your partner and a check-in date. Your partner will cheer you on.'
+        :'Now pick a check-in date. That’s the day your partner checks in with you.'};
+  }
+  if(p.hh&&$('#hh_to')&&once('hh'))return {id:'hh:'+key,once:'hh',at:'#hh_to',glow:'#hh_to',text:'Helping Hand: choose who gets a free card (any category) on their next turn.'};
+  if(!basic)return null;
+  if(!val('#ans')&&ui.tipAns!==key)return {id:'ans:'+key,at:'#ans',glow:'#ans',text:'Read the card, then share your answer. Type it here, or just say it out loud if you’re on a call.'};
+  return {id:'post:'+key,at:'#c_on',glow:'[data-act="post"]',text:'Tick the points that fit you (a commitment earns extra), then tap “Post and end my turn”. That’s a whole turn!'};
+}
+function applyTip(){
+  document.querySelectorAll('.tip').forEach(t=>t.remove());
+  document.querySelectorAll('.tipglow').forEach(t=>t.classList.remove('tipglow'));
+  const t=pickTip();ui.tipCur=t?t.id:null;if(!t||ui.tipSkips.has(t.id))return;
+  const target=$(t.at);if(!target)return;
+  const anchor=target.matches('#sheet,#waitbox,.catpick')?target:(target.closest('.field')||target.closest('.row')||target);
+  const b=document.createElement('div');b.className='tip';b.setAttribute('role','status');
+  b.innerHTML=`<div>💡 ${t.text}</div><div class="tiprow"><button class="tipok" data-act="tipok" data-arg="${esc(t.id)}">Got it</button><button class="tipoff" data-act="tipoff">I’ve played before, hide tips</button></div>`;
+  if(anchor.matches('#sheet,#waitbox'))anchor.insertBefore(b,anchor.children[1]||null);else anchor.before(b);
+  if(t.glow){const g=$(t.glow);if(g)g.classList.add('tipglow')}
+  if(t.once)ui.tipShown.add(t.once);
+}
+/* Typing moves the bubble on to the next step (checked shortly after typing pauses). */
+['input','change'].forEach(ev=>document.addEventListener(ev,e=>{if(e.target&&['ans','c_text','c_due'].includes(e.target.id)){clearTimeout(ui.tipT);ui.tipT=setTimeout(()=>{if((pickTip()||{}).id!==ui.tipCur)applyTip()},600)}}));
 function snapshotInputs(){const o={};document.querySelectorAll('#main textarea,#main input,#main select').forEach(e=>{if(e.id)o[e.id]=e.type==='checkbox'?e.checked:e.value});const a=document.activeElement;o.__focus=a&&a.id;return o}
 function restoreInputs(o){Object.keys(o).forEach(k=>{if(k==='__focus')return;const e=document.getElementById(k);if(e){if(e.type==='checkbox')e.checked=o[k];else e.value=o[k]}});if(o.__focus){const e=document.getElementById(o.__focus);if(e)e.focus()}}
 
@@ -599,10 +671,10 @@ function turnPanel(){
   if(game.status==='over')return `<section class="panel"><h2>Game over</h2><p class="muted">Keep checking off your commitments below. Start a new game any time from "My games".</p></section>`;
   const cur=curPlayer();
   if(!game.players.includes(me))return `<section class="panel"><h2>${esc(nm(cur))} is up</h2><p class="muted">This game already started, so you’re watching. Ask a friend to start a new one with you.</p></section>`;
-  if(!myTurn()&&isBot(cur))return `<section class="panel"><h2>${esc(nm(cur))} is taking a turn…</h2><p class="muted">Computer players move by themselves in a couple of seconds.</p></section>`;
+  if(!myTurn()&&isBot(cur))return `<section class="panel" id="waitbox"><h2>${esc(nm(cur))} is taking a turn…</h2><p class="muted">Computer players move by themselves in a couple of seconds.</p></section>`;
   if(!myTurn()){
     const days=game.lastMoveAt?Math.max(0,Math.floor((Date.now()-game.lastMoveAt)/86400000)):0;
-    return `<section class="panel"><h2>Waiting for ${esc(nm(cur))}</h2>
+    return `<section class="panel" id="waitbox"><h2>Waiting for ${esc(nm(cur))}</h2>
     <p class="muted">${days?`Their turn started ${days} day${days>1?'s':''} ago.`:'Their turn started today.'} No rush: play when you can. This page updates by itself.</p>
     <div class="row"><button data-act="nudge">Copy a "your turn" message</button></div>
     <p class="small muted">Paste it to ${esc(nameOf(cur))} in WhatsApp, Messenger, LINE or a text.</p></section>`;
@@ -779,7 +851,8 @@ function rulesBox(){
   <li>Cards that say "all players are welcome" can be joined by anyone for the same points.</li>
   <li>Commitments get a partner and a check-in date. Keep one and you earn +1 point.</li>
   <li>No pressure or criticism unless asked. You can always pass or save a card for later.</li>
-  <li>Play together on a video call, or take turns whenever you like. Both work.</li></ul></details></section>`;
+  <li>Play together on a video call, or take turns whenever you like. Both work.</li></ul>
+  <div class="row small" style="margin-top:6px"><span>Beginner tips (yellow bubbles): <b>${tipsOn()?'on':'off'}</b></span><button class="small" data-act="tipson">${tipsOn()?'Turn off':'Turn on'}</button></div></details></section>`;
 }
 function hostBox(){
   if(game.host!==me||game.status!=='playing')return '';
@@ -796,7 +869,10 @@ document.addEventListener('click',e=>{
   const b=e.target.closest('[data-act]');if(!b||b.disabled)return;
   const a=b.dataset.act,arg=b.dataset.arg;
   if(a==='commit'){ui.commitOpen=b.checked;render();return}
-  if(a==='opt'){if(arg==='share')ui.optShare=b.checked;else ui.optOther=b.checked;render();return}
+  if(a==='opt'){if(arg==='share')ui.optShare=b.checked;else ui.optOther=b.checked;ui.tipAns=ui.ptsFor;render();return}
+  if(a==='tipok'){ui.tipSkips.add(arg);if(arg.startsWith('ans:'))ui.tipAns=arg.slice(4);applyTip();return}
+  if(a==='tipoff'){lsSet('bm_tips','off');render();return}
+  if(a==='tipson'){if(tipsOn())lsSet('bm_tips','off');else{lsSet('bm_tips','on');lsSet('bm_turns','0');lsSet('bm_tipseen','[]');ui.tipSkips.clear()}render();return}
   if(a==='joinopen'){ui.joinOpen=arg;render();return}
   if(a==='joinclose'){ui.joinOpen=null;render();return}
   if(a==='editname'){ui.editName=true;render();return}
