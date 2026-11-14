@@ -339,9 +339,24 @@ async function startGame(target){
   await G().update({status:'playing',players:order,target,turn:0,lastMoveAt:Date.now()});
 }
 async function removePlayer(id){
-  if(game.host!==me||id===me||game.status!=='lobby')return;
-  await G().update({players:game.players.filter(p=>p!==id)});
+  if(game.host!==me||id===me||!game.players.includes(id))return;
+  if(game.status==='lobby'){await G().update({players:game.players.filter(p=>p!==id)});return}
+  if(game.status!=='playing')return;
+  /* Mid-game (Dan, 2026-11-14: a friend joined twice from two browsers). Their posts stay in the feed; turns skip them from now on. */
+  if(ui.rmAsk!==id){ui.rmAsk=id;return}
+  ui.rmAsk=null;
+  const L=game.players.length,cur=game.turn%L,idx=game.players.indexOf(id),players=game.players.filter(p=>p!==id);
+  if(players.length<2){ui.msg='A game needs at least 2 players. Use “End the game now” instead.';return}
+  const patch={players,removed:firebase.firestore.FieldValue.arrayUnion(id),lastMoveAt:Date.now()};
+  if(idx<cur)patch.turn=cur-1;
+  else if(idx===cur){patch.turn=cur%players.length;patch.pending=null}
+  else patch.turn=cur;
+  await G().update(patch);
 }
+/* Same name twice usually means one person joined from two browsers (e.g. a Facebook chat link, then Chrome). */
+function dupNames(){const seen={},d=[];game.players.forEach(p=>{const n=(nameOf(p)||'').trim().toLowerCase();if(seen[n])d.push(nameOf(p));seen[n]=1});return [...new Set(d)]}
+function dupNote(){const d=dupNames();if(!d.length||game.host!==me)return '';
+  return `<div class="note small">👀 ${d.map(esc).join(', ')} shows up twice. That's usually one person who opened the link in two browsers. Remove the extra one${game.status==='lobby'?' before you start':' in Host tools below'}.</div>`}
 function hearts(c,i){const s=cardStats[cardId(c,i)];return (s&&s.hearts)||[]}
 function iHeart(c,i){return hearts(c,i).includes(me)}
 function inMyDeck(c,i){return !(OFFLINE[c]||[]).includes(i)||iHeart(c,i)}
@@ -678,7 +693,7 @@ function lobby(){
   <div class="row">${inGame?'':(game.players.length<MAXP?`<button class="primary big" data-act="join">Join this game</button>`:'<span class="muted">This game is full.</span>')}
   ${game.host===me?`<div class="field" style="max-width:220px"><label for="target">Points per category to win</label><select id="target"><option value="1">1 (short, about 5 turns each)</option><option value="2" selected>2 (medium)</option><option value="3">3 (long, classic)</option></select></div>
   <button class="primary" data-act="start" ${game.players.length<2?'disabled':''}>Start the game</button>`:(inGame?'<span class="muted">The host starts the game when everyone’s in.</span>':'')}</div>
-  ${game.host===me&&game.players.length<2?'<p class="small muted">You need at least one more player to start.</p>':''}</section>`;
+  ${game.host===me&&game.players.length<2?'<p class="small muted">You need at least one more player to start.</p>':''}${dupNote()}</section>`;
 }
 function winnerBox(){
   return `<section class="panel"><div class="winner" style="margin:0"><span class="trophy" aria-hidden="true">🏆</span><div>
@@ -923,9 +938,14 @@ function rulesBox(){
 }
 function hostBox(){
   if(game.host!==me||game.status!=='playing')return '';
-  return `<section class="panel"><details><summary>Host tools</summary><div class="row" style="margin-top:8px">
+  const dup=dupNames().length>0;
+  const others=game.players.filter(p=>p!==me&&!isBot(p));
+  const rm=others.map(p=>{const ask=ui.rmAsk===p;const d=game.players.filter(q=>nameOf(q)===nameOf(p));const c=posts.filter(x=>x.by===p).length;const n=d.length>1?` (${c} post${c===1?'':'s'}${p===curPlayer()?', up now':''})`:'';
+    return `<button class="small" data-act="remove" data-arg="${esc(p)}">${ask?'Tap again to remove '+esc(nameOf(p))+n:'Remove '+esc(nameOf(p))+n}</button>`}).join('');
+  return `${dupNote()}<section class="panel"><details ${dup||ui.rmAsk?'open':''}><summary>Host tools</summary><div class="row" style="margin-top:8px">
   <button class="small" data-act="skip">Skip ${esc(nameOf(curPlayer()))}’s turn</button>
   <button class="small" data-act="endnow">End the game now (most points wins)</button></div>
+  ${rm?`<p class="small muted" style="margin:10px 0 4px">Remove a player (left the game, or joined twice by mistake). Their posts stay; turns skip them from now on.</p><div class="row">${rm}</div>`:''}
   <p class="small muted">Use these only when everyone agrees.</p></details></section>`;
 }
 
