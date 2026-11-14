@@ -192,6 +192,12 @@ details ol,details ul{margin:.4em 0;padding-left:1.3em}
 .chatmsg.mine .chattext{background:var(--lav);color:var(--accentFg)}
 .chatform{display:flex;gap:6px;padding:8px;border-top:1px solid var(--line)}
 .chatform input{flex:1;min-width:0;margin:0}
+.micbtn{padding:6px 10px;font-size:1.05rem}
+.voicebtn{border:0;cursor:pointer;font:inherit;font-weight:700;color:inherit}
+.chatmsg.mine .voicebtn{background:var(--lav);color:var(--accentFg)}
+.recbar{align-items:center;font-weight:700}
+.recdot{width:12px;height:12px;border-radius:50%;background:#e0605a;flex:none}
+@media (prefers-reduced-motion:no-preference){.recdot{animation:recpulse 1s ease-in-out infinite}@keyframes recpulse{50%{opacity:.3}}}
 @media print{#chatdock{display:none}}
 </style>
 </head>
@@ -316,10 +322,14 @@ function renderChat(){
   const box=$('#chatlist');const atBottom=!box||box.scrollHeight-box.scrollTop-box.clientHeight<40;
   const draft=($('#chatin')||{}).value||'';const hadFocus=document.activeElement&&document.activeElement.id==='chatin';
   dock.innerHTML=`<div class="chatbox" role="dialog" aria-label="Game chat"><div class="chathead"><b>💬 Game chat</b><span class="small muted">Everyone in this game sees it</span><button class="link" data-chat="close" aria-label="Close chat">✕</button></div>
-    <div id="chatlist">${chat.length?chat.map(m=>`<div class="chatmsg ${m.by===me?'mine':''}"><div class="chatmeta">${m.by===me?'You':esc(m.name||nameOf(m.by))} · ${chatTime(m.at)}</div><div class="chattext">${esc(m.text)}</div></div>`).join('')
+    <div id="chatlist">${chat.length?chat.map(m=>`<div class="chatmsg ${m.by===me?'mine':''}"><div class="chatmeta">${m.by===me?'You':esc(m.name||nameOf(m.by))} · ${chatTime(m.at)}</div>${m.audio
+        ?`<button class="chattext voicebtn" data-chat="play" data-arg="${esc(m.audio)}">${ui.playing===m.audio?'⏸':'▶'} Voice message · ${fmtDur(m.dur)}</button>`
+        :`<div class="chattext">${esc(m.text)}</div>`}</div>`).join('')
       :'<p class="small muted" style="text-align:center;margin:18px 0">No messages yet. Say hi 👋</p>'}</div>
-    <form class="chatform" data-chat="form"><input id="chatin" maxlength="500" autocomplete="off" placeholder="Write a message…"><button class="primary small" type="submit">Send</button></form></div>`;
-  const inp=$('#chatin');inp.value=draft;if(hadFocus)inp.focus();
+    ${ui.rec?`<div class="chatform recbar"><span class="recdot" aria-hidden="true"></span><span id="rectime" style="flex:1">Recording ${fmtDur(recSecs())} / 1:00</span>
+        <button class="small" type="button" data-chat="reccancel">Cancel</button><button class="primary small" type="button" data-chat="recsend">Send</button></div>`
+      :`<form class="chatform" data-chat="form"><input id="chatin" maxlength="500" autocomplete="off" placeholder="Write a message…">${canRecord()?'<button class="small micbtn" type="button" data-chat="rec" aria-label="Record a voice message" title="Voice message (up to 1 minute)">🎤</button>':''}<button class="primary small" type="submit">Send</button></form>`}</div>`;
+  const inp=$('#chatin');if(inp){inp.value=draft;if(hadFocus)inp.focus()}
   const list=$('#chatlist');if(atBottom)list.scrollTop=list.scrollHeight;
 }
 async function sendChat(){
@@ -328,10 +338,56 @@ async function sendChat(){
   try{await fs.collection('games').doc(gid).collection('chat').add({by:me,name:myName,text,at:Date.now()})}
   catch(e){console.error(e);inp.value=text;alertChat('That didn’t send. Check your connection and try again.')}
 }
+/* Voice messages (Dan, 2026-11-14): up to 1 minute, low bitrate. The sound is stored in games/{id}/audio
+   and only downloads when someone taps play, so opening the chat stays fast and within the free plan. */
+const REC_MAX=60;let recorder=null,recChunks=[],recStart=0,recTimer=null,recCancel=false,player=null;const audioCache=new Map();
+function canRecord(){return !!(window.MediaRecorder&&navigator.mediaDevices&&navigator.mediaDevices.getUserMedia)}
+function fmtDur(s){s=Math.max(0,Math.round(s||0));return Math.floor(s/60)+':'+String(s%60).padStart(2,'0')}
+function recSecs(){return recStart?(Date.now()-recStart)/1000:0}
+async function startRec(){
+  if(recorder)return;
+  let stream;try{stream=await navigator.mediaDevices.getUserMedia({audio:true})}
+  catch(e){alertChat('The microphone is blocked, so voice messages can’t record. You can still type. (Allow the microphone in your browser settings to use 🎤.)');return}
+  const type=['audio/webm;codecs=opus','audio/mp4','audio/ogg;codecs=opus','audio/webm'].find(t=>MediaRecorder.isTypeSupported&&MediaRecorder.isTypeSupported(t));
+  try{recorder=new MediaRecorder(stream,Object.assign({audioBitsPerSecond:24000},type?{mimeType:type}:{}))}catch(e){recorder=new MediaRecorder(stream)}
+  recChunks=[];recCancel=false;
+  recorder.ondataavailable=e=>{if(e.data&&e.data.size)recChunks.push(e.data)};
+  recorder.onstop=async()=>{
+    stream.getTracks().forEach(t=>t.stop());clearInterval(recTimer);
+    const dur=Math.min(REC_MAX,recSecs()),mime=recorder.mimeType||type||'audio/webm';recorder=null;recStart=0;ui.rec=false;renderChat();
+    if(recCancel||dur<0.7||!recChunks.length)return;
+    const blob=new Blob(recChunks,{type:mime});
+    const data=await new Promise(r=>{const fr=new FileReader();fr.onload=()=>r(fr.result);fr.readAsDataURL(blob)});
+    if(data.length>900000){alertChat('That recording was too big to send. Try a shorter one.');return}
+    try{
+      const ref=await fs.collection('games').doc(gid).collection('audio').add({by:me,data,mime,dur,at:Date.now()});
+      audioCache.set(ref.id,data);
+      await fs.collection('games').doc(gid).collection('chat').add({by:me,name:myName,text:'🎤 Voice message ('+fmtDur(dur)+')',audio:ref.id,dur,at:Date.now()});
+    }catch(e){console.error(e);alertChat('That voice message didn’t send. Check your connection and try again.')}
+  };
+  recorder.start(1000);recStart=Date.now();ui.rec=true;renderChat();
+  recTimer=setInterval(()=>{const t=$('#rectime');if(t)t.textContent='Recording '+fmtDur(recSecs())+' / 1:00';if(recSecs()>=REC_MAX)stopRec(false)},250);
+}
+function stopRec(cancel){if(!recorder)return;recCancel=!!cancel;try{recorder.stop()}catch(e){}}
+async function playVoice(id){
+  if(player&&ui.playing===id){player.pause();player=null;ui.playing=null;renderChat();return}
+  if(player){player.pause();player=null}
+  ui.playing=id;renderChat();
+  try{
+    let data=audioCache.get(id);
+    if(!data){const d=await fs.collection('games').doc(gid).collection('audio').doc(id).get();data=d.exists?d.data().data:null;if(data)audioCache.set(id,data)}
+    if(!data||ui.playing!==id)throw new Error('missing');
+    player=new Audio(data);player.onended=()=>{player=null;ui.playing=null;renderChat()};await player.play();
+  }catch(e){console.error(e);player=null;ui.playing=null;renderChat();alertChat('That voice message couldn’t play here. Try another browser.')}
+}
 function alertChat(t){const l=$('#chatlist');if(l){const p=document.createElement('p');p.className='small missmsg';p.textContent=t;l.appendChild(p);l.scrollTop=l.scrollHeight}}
 document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('[data-chat]');if(!b||b.tagName==='FORM')return;
   if(b.dataset.chat==='open'){ui.chatOpen=true;chatMarkRead();renderChat();const i=$('#chatin');if(i)i.focus();const l=$('#chatlist');if(l)l.scrollTop=l.scrollHeight}
-  if(b.dataset.chat==='close'){ui.chatOpen=false;chatMarkRead();renderChat()}});
+  if(b.dataset.chat==='close'){stopRec(true);if(player){player.pause();player=null;ui.playing=null}ui.chatOpen=false;chatMarkRead();renderChat()}
+  if(b.dataset.chat==='rec')startRec();
+  if(b.dataset.chat==='recsend')stopRec(false);
+  if(b.dataset.chat==='reccancel')stopRec(true);
+  if(b.dataset.chat==='play')playVoice(b.dataset.arg);});
 document.addEventListener('submit',e=>{if(e.target&&e.target.dataset&&e.target.dataset.chat==='form'){e.preventDefault();sendChat()}});
 
 /* ---------- actions ---------- */
