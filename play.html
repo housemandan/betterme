@@ -239,6 +239,8 @@ a.button.small{padding:5px 12px;font-size:.88rem}
 .phwide img{width:100%;height:auto;max-height:none;object-fit:contain}
 .phgrid figcaption{font-size:.75rem;color:var(--muted);margin-top:2px}
 @media print{#vpbar,#phbox{display:none!important}body.printsheet .phgrid{grid-template-columns:repeat(3,1fr)}body.printsheet .phgrid figure{break-inside:avoid}}
+#newver{position:fixed;left:16px;bottom:16px;z-index:65;display:flex;align-items:center;gap:10px;background:var(--surface);color:var(--fg);border:2px solid var(--hintLine);border-radius:14px;padding:8px 12px;box-shadow:0 6px 20px rgba(30,24,56,.25);max-width:calc(100vw - 150px);font-size:.9rem}
+@media print{#newver{display:none}}
 </style>
 </head>
 <body>
@@ -257,6 +259,7 @@ const OFFLINE={"M": [0, 1, 4, 10, 11, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42
 /* PTS[deck][i] = [sharing pts, commitment pts, other option label, other option pts, most points allowed] */
 const PTS={"M":[[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[0,2,"I already use a visible affirmation",2,2],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[0,1,"I already use a vision board",1,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,1,"",0,2],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,2,"",0,3],[0,2,"",0,2],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[0,1,"",0,1],[1,0,"",0,1],[1,1,"",0,2],[1,0,"",0,1]],"T":[[1,1,"",0,2],[1,1,"",0,2],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,1,"",0,2],[0,1,"I shared a rewarding time I gave time or money",1,2],[1,0,"",0,1],[1,1,"",0,2],[1,1,"",0,2],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[0,1,"",0,1],[0,1,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,1,"",0,2],[1,0,"",0,1],[0,1,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,1,"",0,2],[1,1,"",0,2],[1,0,"",0,1],[0,1,"",0,1],[1,0,"",0,1],[1,1,"",0,2],[1,0,"",0,1],[1,1,"",0,2],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[0,1,"",0,1],[1,1,"",0,2],[1,0,"",0,1],[1,0,"",0,1],[0,1,"I already have written goals",1,1],[1,0,"",0,1],[1,1,"",0,2]],"B":[[1,0,"",0,1],[1,0,"",0,1],[0,1,"I already read food labels",1,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[0,1,"I’m usually well rested",1,1],[0,1,"I already drink plenty of water",1,2],[1,0,"",0,1],[1,1,"",0,2],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[0,1,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,1,"",0,2],[1,0,"",0,1],[1,1,"",0,2],[1,1,"",0,2],[1,1,"",0,2],[1,0,"",0,1],[1,0,"I’m a doctor, nurse, scientist or inventor",1,2],[1,1,"",0,2],[1,1,"",0,2],[0,1,"",0,1],[1,0,"",0,1],[1,1,"",0,2],[1,1,"",0,2],[1,0,"",0,1],[1,1,"",0,2],[0,1,"",0,1],[1,1,"",0,2],[0,1,"I think my current habits will get me there",1,1],[1,1,"",0,2]],"H":[[1,0,"",0,1],[1,2,"",0,3],[0,1,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[0,2,"",0,2],[0,2,"",0,2],[1,1,"",0,2],[1,0,"",0,1],[1,1,"",0,2],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,1,"",0,2],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[0,2,"I’ve volunteered in the last 3 months",1,3],[1,1,"",0,2],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,1,"",0,2],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1]],"P":[[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,2,"",0,3],[1,0,"",0,1],[0,1,"",0,1],[1,1,"",0,2],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[0,1,"",0,1],[1,1,"",0,2],[1,1,"",0,2],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,1,"",0,2],[1,0,"",0,1],[1,1,"",0,2],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[0,2,"I answered “yes” (I’m a good listener)",1,2],[1,0,"",0,1],[0,2,"",0,2],[1,0,"",0,1],[1,0,"",0,1],[1,1,"",0,2],[0,1,"I have nothing borrowed to return",1,1],[0,1,"I can’t think of an unfulfilled promise",1,1],[0,1,"",0,1],[1,1,"",0,2],[0,1,"",0,1],[0,1,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,1,"",0,2],[1,1,"",0,2],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,1,"",0,2],[1,1,"",0,2],[1,0,"",0,1],[1,1,"",0,2],[0,1,"I told a joke now",1,1]],"FF":[[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1]]};
 
+const BUILD='ebd4012090';
 
 /* ============ QUICK PLAY (bettermegame.com) ============ */
 /* Firebase web config: these values are public by design (they identify the project, they are not passwords). */
@@ -1491,6 +1494,19 @@ document.addEventListener('click',e=>{
 boot();
 /* Installable site + turn alerts: the service worker (sw.js) shows alerts; it caches nothing. */
 if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js').catch(e=>console.warn('sw',e));
+/* ---------- new version notice (Dan, 2026-11-14) ----------
+   A friend kept an old copy of the page open after an update and saw "📷 Photo" instead of the photo.
+   Every few minutes (and when the tab comes back into view) the page checks site/version.txt;
+   if the site changed, a small "Better Me was updated. Refresh" bar appears. No auto-reload, so nothing typed is lost. */
+function checkVersion(){
+  if(document.hidden||typeof BUILD==='undefined'||$('#newver'))return;
+  fetch('/version.txt?'+Date.now(),{cache:'no-store'}).then(r=>r.ok?r.text():'').then(v=>{v=(v||'').trim();
+    if(/^[0-9a-f]{6,16}$/.test(v)&&v!==BUILD&&!$('#newver')){const b=document.createElement('div');b.id='newver';b.setAttribute('role','status');
+      b.innerHTML='<span>✨ Better Me was updated.</span><button type="button" class="small primary">Refresh</button>';
+      b.querySelector('button').onclick=()=>location.reload();document.body.appendChild(b)}}).catch(()=>{});
+}
+setInterval(checkVersion,4*60e3);document.addEventListener('visibilitychange',checkVersion);
+
 </script>
 </body>
 </html>
