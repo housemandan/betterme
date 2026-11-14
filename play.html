@@ -721,7 +721,7 @@ function turnPanel(){
   /* Say what the card actually rewards: just drawing it, drawing and sharing, or sharing. */
   const ct=cardText(p.cat,p.idx);
   const shareLabel=/drawing this card,? and shar/i.test(ct)?'I drew and shared this card'
-    :/(for|by) drawing this card|drew this card/i.test(ct)?'For drawing this card':'I shared my answer';
+    :/drawing this card|drew this card/i.test(ct)?'For drawing this card':'I shared my answer';
   const opts=`${lim.share?`<label class="row" style="color:var(--fg)"><input type="checkbox" style="width:auto" ${ui.optShare?'checked':''} data-act="opt" data-arg="share"> ${shareLabel}${plus(lim.share)}</label>`:''}
     ${lim.other?`<label class="row" style="color:var(--fg)"><input type="checkbox" style="width:auto" ${ui.optOther?'checked':''} data-act="opt" data-arg="other"> ${esc(lim.other)}${plus(lim.otherPts)}</label>`:''}`;
   return `<section class="panel"><h2>Your card</h2>${cardBox(p.cat,p.idx)}
