@@ -47,7 +47,7 @@ body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:16px
 .sky .in{max-width:760px;margin:0 auto;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
 .sky .in{gap:20px 28px}
 .brand{flex:none;display:flex;flex-direction:column;align-items:center;gap:4px;text-decoration:none;color:#fff}
-.brand img{width:190px;height:auto;display:block;filter:drop-shadow(0 4px 14px #5ad4e655)}
+.brand img{width:190px;height:auto;display:block}
 .brand span{font-family:var(--display);font-weight:700;font-size:2rem;letter-spacing:.08em;line-height:1;text-shadow:0 2px 8px #0008}
 .sky h1{font-family:var(--display);font-size:1.7rem;margin:0;letter-spacing:.03em;text-wrap:balance}
 .sky p{margin:.25em 0 0;color:#fff;font-size:1.05rem}
@@ -96,10 +96,12 @@ label{font-size:.88rem;font-weight:700;color:var(--muted)}
 .who{display:flex;align-items:center;gap:8px;font-weight:800;min-width:0}
 .who span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .tag{font-size:.72rem;font-weight:800;letter-spacing:.05em;text-transform:uppercase;padding:2px 8px;border-radius:999px;background:linear-gradient(135deg,var(--teal),var(--lav));color:var(--accentFg)}
-.cats{display:flex;gap:8px;flex-wrap:wrap}
-.cat{display:flex;align-items:center;gap:4px;font-size:.82rem;font-weight:800}
-.pips{display:flex;gap:2px}
-.pip{width:10px;height:10px;border-radius:50%;border:2px solid currentColor}
+.cats{display:flex;gap:6px;flex-wrap:wrap}
+.cat{display:flex;align-items:center;gap:6px;font-size:.8rem;font-weight:800;padding:3px 9px;border-radius:999px;
+  background:color-mix(in srgb,currentColor 13%,transparent);border:1px solid color-mix(in srgb,currentColor 35%,transparent)}
+.pips{display:flex;gap:3px}
+.pip{width:11px;height:11px;border-radius:50%;border:2px solid currentColor}
+.num{font-family:var(--body);font-weight:800}
 .pip.on{background:currentColor}
 .fulfilled{font-variant-numeric:tabular-nums;font-size:.88rem;color:var(--muted)}
 .card{border-radius:14px;overflow:hidden;background:var(--cardBg);color:var(--cardFg);box-shadow:0 2px 10px #1e183822;border:1px solid #0000001a}
@@ -667,10 +669,10 @@ function lobby(){
 }
 function scoreboard(){
   const sc=scores();const cur=curPlayer();
-  const head=game.status==='over'?`<h2>${esc(nm(game.winner))} ${game.winner===me?'win':'wins'}! Everyone give ${game.winner===me?'yourself':'them'} a compliment.</h2>`:`<h2>Race to ${game.target} in every category</h2>`;
+  const head=game.status==='over'?`<h2>${esc(nm(game.winner))} ${game.winner===me?'win':'wins'}! Everyone give ${game.winner===me?'yourself':'them'} a compliment.</h2>`:`<h2>Race to <span class="num">${game.target}</span> point${game.target===1?'':'s'} in every category</h2>`;
   return `<section class="panel">${head}<div class="players">${game.players.map(p=>{const s=sc[p];const up=p===cur&&game.status==='playing';
     return `<div class="pl ${up?'cur':''}"><div class="spread"><div class="who"><span>${esc(nm(p))}</span>${isBot(p)?'<span class="small muted">(computer)</span>':''}</div>${up?'<span class="tag">Up now</span>':''}</div>
-    <div class="cats">${KEYS.map(k=>`<span class="cat" style="color:${col(k)}" title="${CATS[k].name}: ${s[k]}"><span>${CATS[k].name[0]}</span>${s[k]>=game.target?`<span class="gem" style="--c:${col(k)}" aria-label="fulfilled"></span>`:`<span class="pips">${Array.from({length:game.target},(_,i)=>`<span class="pip ${s[k]>i?'on':''}"></span>`).join('')}</span>`}</span>`).join('')}</div>
+    <div class="cats">${KEYS.map(k=>`<span class="cat" style="color:${col(k)}" title="${CATS[k].name}: ${s[k]} of ${game.target}"><span>${CATS[k].name}</span>${s[k]>=game.target?`<span class="gem" style="--c:${col(k)}" aria-label="fulfilled"></span>`:`<span class="pips">${Array.from({length:game.target},(_,i)=>`<span class="pip ${s[k]>i?'on':''}"></span>`).join('')}</span>`}</span>`).join('')}</div>
     <div class="fulfilled">${fulfilledCount(s)} of 5 fulfilled</div></div>`}).join('')}</div></section>`;
 }
 function cardBox(cat,idx,extra){
