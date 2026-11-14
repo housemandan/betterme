@@ -898,7 +898,7 @@ function restoreInputs(o){Object.keys(o).forEach(k=>{if(k==='__focus')return;con
 function view(){
   const msg=ui.msg?`<div class="note warn">${esc(ui.msg)}</div>`:'';
   if(!myName||ui.editName)return msg+nameBox();
-  const who=`<div class="spread small muted"><span>Playing as <b style="color:var(--fg)">${esc(myName)}</b></span><button class="link" data-act="editname">Change name</button></div>`;
+  const who=`<div class="spread small muted"><span>Playing as <b style="color:var(--fg)">${esc((game&&game.names&&game.names[me])||myName)}</b></span><button class="link" data-act="editname">Change name</button></div>`;
   if(!gid)return msg+who+home()+practiceBox()+suggestBox()+rulesBox();
   if(game===null)return msg+`<section class="panel"><p class="muted">Loading the game…</p></section>`;
   if(game===false)return msg+`<section class="panel"><h2>Game not found</h2><p class="muted">Check the link, or ask your friend to send it again.</p><div class="row"><button data-act="home">My games</button></div></section>`;
