@@ -544,8 +544,12 @@ function pickTip(){
   const basic=tipTurns()<TIP_BASIC_TURNS,seen=tipSeen();
   const once=k=>!seen.has(k);
   /* Game over: shown at the end of each finished game until dismissed (it's the moment that matters most). */
-  if(game.status==='over')return ($('#sheet')&&once('over:'+gid))?{id:'over:'+gid,at:'#sheet',
-    text:`Game over, nice playing! Here’s what to do now: ${game.winner===me?'enjoy your compliments, and give each player one back':'give '+esc(nameOf(game.winner))+' a compliment'}. Then keep your game sheet: copy it, email it, print it, or add the check-in dates to your calendar with the buttons below. Your partner will check in with you.`}:null;
+  if(game.status==='over'){
+    if(!$('#sheet')||!once('over:'+gid))return null;
+    const has=posts.some(p=>p.commit);
+    return {id:'over:'+gid,at:'#sheet',glow:has?'#sheet .row.noprint':null,
+      text:`Game over, nice playing! Step 1: ${game.winner===me?'enjoy your compliments, and give each player one back':'give '+esc(nameOf(game.winner))+' a sincere compliment'}. Step 2: <b>keep this game sheet!</b> ${has?'Tap a button below to copy it, email it to yourself, print it, or add your check-in dates to your calendar. Your partner will check in with you.':'You made no commitments this time, so there’s nothing to save. Next game, try one for extra points.'}`};
+  }
   if(game.status!=='playing')return null;
   const val=s=>((($(s)||{}).value)||'').trim();
   if(!myTurn()){
@@ -599,7 +603,8 @@ function view(){
   const bar=`<div class="spread"><button class="link" data-act="home">← My games</button><h2>${esc(game.name||'Game')}</h2></div>`;
   if(game.status==='lobby')return msg+who+bar+lobby()+rulesBox()+suggestBox();
   const party=celebration();
-  if(game.status==='over')return party+msg+bar+scoreboard()+commitsPanel()+feed()+who+suggestBox()+rulesBox();
+  /* Game over (Dan, 2026-11-14): the winner box is the very first thing, the game sheet right under it, then everything else. */
+  if(game.status==='over')return msg+winnerBox()+commitsPanel()+party+scoreboard()+feed()+bar+who+suggestBox()+rulesBox();
   return party+msg+who+bar+scoreboard()+turnPanel()+commitsPanel()+feed()+suggestBox()+rulesBox()+hostBox();
 }
 /* When someone fills a category: a gem appears on the scoreboard and everyone watching sees a short celebration.
@@ -675,12 +680,15 @@ function lobby(){
   <button class="primary" data-act="start" ${game.players.length<2?'disabled':''}>Start the game</button>`:(inGame?'<span class="muted">The host starts the game when everyone’s in.</span>':'')}</div>
   ${game.host===me&&game.players.length<2?'<p class="small muted">You need at least one more player to start.</p>':''}</section>`;
 }
+function winnerBox(){
+  return `<section class="panel"><div class="winner" style="margin:0"><span class="trophy" aria-hidden="true">🏆</span><div>
+    <h2>${game.winner===me?'You win!':esc(nameOf(game.winner))+' wins!'}</h2>
+    <p>${game.winner===me?'Soak it in while everyone gives you a sincere compliment.':`Everyone give ${esc(nameOf(game.winner))} a sincere compliment.`} Then keep your game sheet, right below.</p></div></div>
+    <p class="small muted" style="margin:8px 0 0">${esc(game.name||'Game')}</p></section>`;
+}
 function scoreboard(){
   const sc=scores();const cur=curPlayer();
-  const head=game.status==='over'?`<div class="winner"><span class="trophy" aria-hidden="true">🏆</span><div>
-    <h2>${game.winner===me?'You win!':esc(nameOf(game.winner))+' wins!'}</h2>
-    <p>${game.winner===me?'Soak it in while everyone gives you a sincere compliment.':`Everyone give ${esc(nameOf(game.winner))} a sincere compliment.`}${posts.some(p=>p.commit)?' Then keep your game sheet below: it has your commitments and partners.':''}</p></div></div>
-    <p class="small muted" style="margin:0 0 6px">Final scores</p>`:`<h2>Race to <span class="num">${game.target}</span> point${game.target===1?'':'s'} in every category</h2>`;
+  const head=game.status==='over'?`<h2>Final scores</h2>`:`<h2>Race to <span class="num">${game.target}</span> point${game.target===1?'':'s'} in every category</h2>`;
   return `<section class="panel">${head}<div class="players">${game.players.map(p=>{const s=sc[p];const up=p===cur&&game.status==='playing';
     return `<div class="pl ${up?'cur':''}"><div class="spread"><div class="who"><span>${esc(nm(p))}</span>${isBot(p)?'<span class="small muted">(computer)</span>':''}</div>${up?'<span class="tag">Up now</span>':''}</div>
     <div class="cats">${KEYS.map(k=>`<span class="cat" style="color:${col(k)}" title="${CATS[k].name}: ${s[k]} of ${game.target}"><span>${CATS[k].name}</span>${s[k]>=game.target?`<span class="gem" style="--c:${col(k)}" aria-label="fulfilled"></span>`:`<span class="pips">${Array.from({length:game.target},(_,i)=>`<span class="pip ${s[k]>i?'on':''}"></span>`).join('')}</span>`}</span>`).join('')}</div>
@@ -780,7 +788,7 @@ function commitRow(p,mode){
 }
 function commitsPanel(){
   const g=commitGroups();const over=game.status==='over';
-  if(!g.list.length)return over?`<section class="panel"><h2>Your game sheet</h2><p class="muted">No commitments were made this game.</p></section>`:'';
+  if(!g.list.length)return over?`<section class="panel" id="sheet"><h2>Your game sheet</h2><p class="muted">No commitments were made this game. Next game, tick “I’m making a commitment” on a card to earn extra points, and they’ll show up here.</p></section>`:'';
   return `<section class="panel" id="sheet"><h2>${over?'Your game sheet':'Commitments'}</h2>
   ${over?'<p class="sub">Keep this. Your commitments, who’s holding you to them, and the ones you’re holding others to. This page stays at this link.</p>':''}
   <h3 class="small muted" style="font-family:var(--body);text-transform:uppercase;letter-spacing:.06em">Your commitments</h3>
