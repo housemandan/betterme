@@ -385,12 +385,26 @@ function checkEnd(list){
   game.players.forEach(p=>KEYS.forEach(k=>{if(sc[p][k]>=game.target&&!firsts[k]){firsts[k]=p;newly.push({p,k})}}));
   return {firsts,newly,winners:game.players.filter(p=>fulfilledCount(sc[p])===5)};
 }
+/* Highlight a field that still needs filling, with a short reason right under it.
+   Done in place (no re-render) so nothing the player typed is lost; clears as soon as they fix it. */
+function flagField(sel,msg){
+  const el=$(sel);if(!el)return;const box=el.closest('.field')||el.parentNode;
+  box.classList.add('missing');
+  let m=box.querySelector('.missmsg');if(!m){m=document.createElement('div');m.className='missmsg';box.appendChild(m)}
+  m.textContent=msg;
+  const clear=()=>{box.classList.remove('missing');m.remove()};
+  el.addEventListener('input',clear,{once:true});el.addEventListener('change',clear,{once:true});
+}
+function clearFlags(){document.querySelectorAll('.field.missing').forEach(b=>{b.classList.remove('missing');const m=b.querySelector('.missmsg');if(m)m.remove()})}
 function readCommit(){
   if(!ui.commitOpen)return null;
+  clearFlags();
   const t=($('#c_text')||{}).value||'',partner=($('#c_partner')||{}).value||'',due=($('#c_due')||{}).value||'';
-  if(!t.trim()){ui.msg='Write what you’re committing to, or untick the commitment box.';return false}
-  if(!/^\d{4}-\d{2}-\d{2}$/.test(due)){ui.msg='Pick a check-in date for your commitment, so your partner knows when to ask.';return false}
-  if(due<new Date().toISOString().slice(0,10)){ui.msg='The check-in date can’t be in the past.';return false}
+  const today=new Date().toISOString().slice(0,10);let first=null;
+  if(!t.trim()){flagField('#c_text','Write what you’ll do (or untick “I’m making a commitment”).');first=first||'#c_text'}
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(due)){flagField('#c_due','Pick a check-in date, so your partner knows when to ask.');first=first||'#c_due'}
+  else if(due<today){flagField('#c_due','The check-in date can’t be in the past.');first=first||'#c_due'}
+  if(first){const el=$(first);el.scrollIntoView({behavior:'smooth',block:'center'});el.focus({preventScroll:true});return false}
   return {text:t.trim().slice(0,500),partner,due,done:false};
 }
 /* Each card's points come from the master card list: [for sharing, extra for a commitment]. */
