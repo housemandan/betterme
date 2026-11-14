@@ -414,14 +414,15 @@ function flagField(sel,msg){
   el.addEventListener('input',clear,{once:true});el.addEventListener('change',clear,{once:true});
 }
 function clearFlags(){document.querySelectorAll('.field.missing').forEach(b=>{b.classList.remove('missing');const m=b.querySelector('.missmsg');if(m)m.remove()})}
-function readCommit(){
-  if(!ui.commitOpen)return null;
+/* Reads the commitment fields (your own turn uses #c_..., joining someone's card uses #jc_...). */
+function readCommit(open=ui.commitOpen,pre='#c_'){
+  if(!open)return null;
   clearFlags();
-  const t=($('#c_text')||{}).value||'',partner=($('#c_partner')||{}).value||'',due=($('#c_due')||{}).value||'';
+  const t=($(pre+'text')||{}).value||'',partner=($(pre+'partner')||{}).value||'',due=($(pre+'due')||{}).value||'';
   const today=new Date().toISOString().slice(0,10);let first=null;
-  if(!t.trim()){flagField('#c_text','👆 Almost there! Write one small thing you’ll do (or untick “I’m making a commitment”).');first=first||'#c_text'}
-  if(!/^\d{4}-\d{2}-\d{2}$/.test(due)){flagField('#c_due','👆 Pick a check-in date, so your partner knows when to cheer you on.');first=first||'#c_due'}
-  else if(due<today){flagField('#c_due','👆 Pick today or a day coming up.');first=first||'#c_due'}
+  if(!t.trim()){flagField(pre+'text','👆 Almost there! Write one small thing you’ll do (or untick “I’m making a commitment”).');first=first||pre+'text'}
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(due)){flagField(pre+'due','👆 Pick a check-in date, so your partner knows when to cheer you on.');first=first||pre+'due'}
+  else if(due<today){flagField(pre+'due','👆 Pick today or a day coming up.');first=first||pre+'due'}
   if(first){const el=$(first);el.scrollIntoView({behavior:'smooth',block:'center'});el.focus({preventScroll:true});return false}
   return {text:t.trim().slice(0,500),partner,due,done:false};
 }
@@ -464,8 +465,10 @@ async function saveCard(){
 }
 async function joinIn(parentId){
   const parent=posts.find(x=>x.id===parentId);if(!parent)return;
-  const text=(($('#j_'+parentId)||{}).value||'').trim();const pts=+(($('#jp_'+parentId)||{}).value||1);
+  const text=(($('#j_'+parentId)||{}).value||'').trim();
+  const pts=ptsFrom(joinLimit(parent),ui.jShare,ui.jOther,ui.jCommit);
   const post={by:me,cat:parent.cat,idx:parent.idx,text:text.slice(0,4000),pts,kind:'join',parent:parentId,at:Date.now()};
+  const c=readCommit(ui.jCommit,'#jc_');if(c===false)return;if(c)post.commit=c;
   await POSTS().add(post);
   const r=checkEnd(posts.concat(post));
   if(r.winners.length)await G().update({status:'over',winner:r.winners[0],pending:null});
@@ -796,10 +799,42 @@ async function addNote(postId,preset){
   await POSTS().add({by:me,cat:null,idx:null,text:text.slice(0,1000),pts:0,kind:'note',parent:postId,at:Date.now()});
   if(box)box.value='';
 }
-function joinOpts(p){
-  const l=ptsLimit(p.cat,p.idx);const o=[];const base=Math.min(l.max,Math.max(l.share,l.otherPts));
-  for(let n=l.max;n>=0;n--)o.push(`<option value="${n}" ${n===base?'selected':''}>${n}${n>base?' (with a commitment: write it in your answer)':''}</option>`);
-  return o.join('');
+/* Points for someone joining another player's card. Same options as the card, except when the card
+   gives the sharing point only to the player who drew it ("1 point to the player drawing this card"):
+   then joiners can only earn the commitment (or "other") points. */
+/* Sharing point: a card that says "1 point for drawing this card" gives it to the drawer only,
+   unless it also opens sharing to everyone ("all players are welcome to share", "each player may..."). */
+const DRAWER_PT=/drawing this card|drew this card|draws this card|player drawing/i;
+const ALL_SHARE=/all players are welcome|to all players|each player may|any player may (also )?share/i;
+/* "I already do this" options any player can claim (checked by hand, Nov 2026). On every other card
+   that option is for the drawer only ("If you drew this card and..."). */
+const OTHER_ANY=new Set(['M8','T6','B30','H38']);
+function joinLimit(p){
+  const l=ptsLimit(p.cat,p.idx);const t=cardText(p.cat,p.idx);
+  const share=DRAWER_PT.test(t)&&!ALL_SHARE.test(t)?0:l.share;
+  const anyOther=OTHER_ANY.has(p.cat+p.idx);
+  const j=Object.assign({},l,{share,other:anyOther?l.other:'',otherPts:anyOther?l.otherPts:0});
+  j.max=Math.min(l.max,j.share+j.commit+j.otherPts);
+  return j;
+}
+function joinPanel(p){
+  const l=joinLimit(p);const plus=n=>n?` <b>(+${n})</b>`:'';
+  const pts=ptsFrom(l,ui.jShare,ui.jOther,ui.jCommit);
+  const others=game.players.filter(x=>x!==me);
+  return `<div class="field"><label for="j_${p.id}">Your answer (optional if you said it out loud)</label><textarea id="j_${p.id}" rows="3"></textarea></div>
+  <div class="field"><label>Your points (tick what applies)</label>
+  ${l.share?`<label class="row" style="color:var(--fg)"><input type="checkbox" style="width:auto" ${ui.jShare?'checked':''} data-act="jopt" data-arg="share"> I shared my answer too${plus(l.share)}</label>`:''}
+  ${l.other?`<label class="row" style="color:var(--fg)"><input type="checkbox" style="width:auto" ${ui.jOther?'checked':''} data-act="jopt" data-arg="other"> ${esc(l.other)}${plus(l.otherPts)}</label>`:''}
+  ${l.commit?`<label class="row" style="color:var(--fg)"><input type="checkbox" id="jc_on" style="width:auto" ${ui.jCommit?'checked':''} data-act="jopt" data-arg="commit"> I’m making a commitment${plus(l.commit)}</label>`:''}
+  ${!l.share&&!l.other&&!l.commit?'<div class="small muted">This card’s points go to the player who drew it, but you’re welcome to share your answer.</div>':''}
+  ${!l.share&&(l.commit||l.other)?'<div class="small muted">On this card, the point for drawing it goes to the player who drew it. You can still earn the points above.</div>':''}
+  <div class="note" style="font-weight:700">You get ${pts} point${pts===1?'':'s'} in ${CATS[p.cat].name}</div></div>
+  <div style="display:${ui.jCommit?'grid':'none'};gap:8px">
+    <div class="field"><label for="jc_text">What will you do?</label><input id="jc_text" placeholder="e.g. Write 3 things I’m grateful for every night this week"></div>
+    <div class="row"><div class="field" style="flex:1;min-width:160px"><label for="jc_partner">Accountability partner</label><select id="jc_partner">${others.map(o=>`<option value="${esc(o)}" ${o===p.by?'selected':''}>${esc(nm(o))}</option>`).join('')}</select></div>
+    <div class="field" style="flex:1;min-width:160px"><label for="jc_due">Check-in date (needed)</label><input type="date" id="jc_due" min="${new Date().toISOString().slice(0,10)}"></div></div>
+  </div>
+  <div class="row"><button class="primary small" data-act="joinpost" data-arg="${p.id}">Post</button><button class="small" data-act="joinclose">Cancel</button></div>`;
 }
 function postLine(p){
   const when=new Date(p.at).toLocaleDateString(undefined,{month:'short',day:'numeric'});
@@ -814,9 +849,8 @@ function postLine(p){
   <details class="qline"><summary class="small" style="font-family:var(--body);font-weight:500">The card</summary>${esc(t)}</details>
   ${p.text?`<div class="answer">${esc(p.text)}</div>`:''}
   ${p.commit?`<div class="small muted">Committed: ${esc(p.commit.text)}</div>`:''}
-  ${reps.length?`<div class="replies">${reps.map(r=>`<div class="reply"><div class="meta"><b>${esc(nm(r.by))}</b> joined in <span>+${r.pts}</span></div><div class="answer">${esc(r.text)}</div></div>`).join('')}</div>`:''}
-  ${canJoin?(ui.joinOpen===p.id?`<div class="field"><label for="j_${p.id}">Your answer (optional if you said it out loud)</label><textarea id="j_${p.id}" rows="3"></textarea>
-    <div class="row"><label for="jp_${p.id}">Points</label><select id="jp_${p.id}" style="width:auto">${joinOpts(p)}</select><button class="primary small" data-act="joinpost" data-arg="${p.id}">Post</button><button class="small" data-act="joinclose">Cancel</button></div></div>`
+  ${reps.length?`<div class="replies">${reps.map(r=>`<div class="reply"><div class="meta"><b>${esc(nm(r.by))}</b> joined in <span>+${r.pts}</span></div>${r.text?`<div class="answer">${esc(r.text)}</div>`:''}${r.commit?`<div class="small muted">Committed: ${esc(r.commit.text)}</div>`:''}</div>`).join('')}</div>`:''}
+  ${canJoin?(ui.joinOpen===p.id?joinPanel(p)
     :`<div class="row"><button class="small" data-act="joinopen" data-arg="${p.id}">Join in on this card</button></div>`):''}</div>`;
 }
 function feed(){
@@ -848,7 +882,7 @@ function rulesBox(){
   <li><b>Fall Forward</b> (rare): read a card about setbacks, share one that made you stronger, and take 1 point in any category.</li>
   <li><b>Helping Hand</b> (rare): pick any category for your card, then give another player a free card of any category for their next turn.</li>
   <li>Tap ♡ on any card that helped you. Hearts show which cards people love, and your hearted cards always stay in your deck.</li>
-  <li>Cards that say "all players are welcome" can be joined by anyone for the same points.</li>
+  <li>Cards that welcome other players can be joined: tap “Join in” under that card in the feed. You earn what the card offers any player (often a point for a commitment). The point for drawing the card stays with the player who drew it.</li>
   <li>Commitments get a partner and a check-in date. Keep one and you earn +1 point.</li>
   <li>No pressure or criticism unless asked. You can always pass or save a card for later.</li>
   <li>Play together on a video call, or take turns whenever you like. Both work.</li></ul>
@@ -873,7 +907,8 @@ document.addEventListener('click',e=>{
   if(a==='tipok'){ui.tipSkips.add(arg);if(arg.startsWith('ans:'))ui.tipAns=arg.slice(4);applyTip();return}
   if(a==='tipoff'){lsSet('bm_tips','off');render();return}
   if(a==='tipson'){if(tipsOn())lsSet('bm_tips','off');else{lsSet('bm_tips','on');lsSet('bm_turns','0');lsSet('bm_tipseen','[]');ui.tipSkips.clear()}render();return}
-  if(a==='joinopen'){ui.joinOpen=arg;render();return}
+  if(a==='joinopen'){ui.joinOpen=arg;const jp=posts.find(x=>x.id===arg);const jl=jp?joinLimit(jp):{share:0};ui.jShare=jl.share>0;ui.jOther=false;ui.jCommit=false;render();return}
+  if(a==='jopt'){if(arg==='share')ui.jShare=b.checked;else if(arg==='other')ui.jOther=b.checked;else ui.jCommit=b.checked;render();return}
   if(a==='joinclose'){ui.joinOpen=null;render();return}
   if(a==='editname'){ui.editName=true;render();return}
   if(a==='partyclose'){party=null;clearTimeout(partyTimer);render();return}
