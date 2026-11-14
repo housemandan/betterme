@@ -299,7 +299,9 @@ function nameOf(id,g){g=g||game;if(g&&g.names&&g.names[id])return g.names[id];fo
 function nm(id,g){g=g||game;return id===(g&&g.id===gid?me:seatOf(g))?'You':nameOf(id,g)}
 function scores(list){
   const s={};(game?game.players:[]).forEach(p=>s[p]={H:0,M:0,B:0,P:0,T:0});
-  (list||posts).forEach(x=>{if(s[x.by]&&x.cat&&x.pts>0)s[x.by][x.cat]+=x.pts});
+  /* The commitment point comes when you make it (Dan, 2026-11-14). "I did it" is just a celebration, no extra point
+     (older games gave +1 for it; those are ignored so nobody counts twice). */
+  (list||posts).forEach(x=>{if(s[x.by]&&x.cat&&x.pts>0&&x.kind!=='kept')s[x.by][x.cat]+=x.pts});
   /* Points beyond the target don't count: a full category is simply full. */
   const t=game?game.target:3;Object.values(s).forEach(o=>KEYS.forEach(k=>{o[k]=Math.min(o[k],t)}));
   return s;
@@ -1007,10 +1009,7 @@ async function joinIn(parentId){
 async function markDone(postId){
   const p=posts.find(x=>x.id===postId);if(!p||p.by!==me||!p.commit||p.commit.done)return;
   await POSTS().doc(postId).update({'commit.done':true,'commit.doneAt':Date.now()});
-  const kept={by:me,cat:p.cat,idx:null,text:p.commit.text,pts:1,kind:'kept',parent:postId,at:Date.now()};
-  await POSTS().add(kept);
-  const r=checkEnd(posts.concat(kept));
-  if(r.winners.length)await G().update({status:'over',winner:r.winners[0],pending:null});
+  await POSTS().add({by:me,cat:p.cat,idx:null,text:p.commit.text,pts:0,kind:'kept',parent:postId,at:Date.now()});
 }
 async function skipTurn(){if(!game||game.host!==me||game.status!=='playing')return;await G().update(nextTurnPatch())}
 async function endNow(){
@@ -1304,7 +1303,7 @@ function commitRow(p,mode){
     ${canTalk?`<div class="row" style="margin-top:6px"><input id="n_${p.id}" placeholder="${esc(mode==='partner'?'Send a check-in message':'Send an update or reply')}" style="flex:1;min-width:160px">
       <button class="small" data-act="note" data-arg="${p.id}">Send</button>
       ${ask?`<button class="small" data-act="asknote" data-arg="${p.id}">Ask how it’s going</button>`:''}
-      ${!c.done&&p.by===me?`<button class="small primary" data-act="done" data-arg="${p.id}">I did it (+1 ${CATS[p.cat].name})</button>`:''}</div>`:''}
+      ${!c.done&&p.by===me?`<button class="small primary" data-act="done" data-arg="${p.id}">I did it! 🎉</button>`:''}</div>`:''}
   </div>`;
 }
 function commitsPanel(){
@@ -1400,7 +1399,7 @@ function postLine(p){
     +(p.helped?` <span class="chip" style="background:var(--HH)">Helping Hand → ${esc(nm(p.helped))}</span>`:'');
   if(p.kind==='pass')return `<div class="post"><div class="meta"><b>${esc(nm(p.by))}</b> passed on a card ${chip}<span>${when}</span></div></div>`;
   if(p.kind==='saved')return `<div class="post"><div class="meta"><b>${esc(nm(p.by))}</b> saved a ${CATS[p.cat].name} card to gather courage<span>${when}</span></div></div>`;
-  if(p.kind==='kept')return `<div class="post"><div class="meta"><b>${esc(nm(p.by))}</b> kept a commitment ${chip}<span>+1</span><span>${when}</span></div><div class="answer">${esc(p.text)}</div></div>`;
+  if(p.kind==='kept')return `<div class="post"><div class="meta"><b>${esc(nm(p.by))}</b> kept a commitment 🎉 ${chip}<span>${when}</span></div><div class="answer">${esc(p.text)}</div></div>`;
   const deck=p.card||p.cat;const t=cardText(deck,p.idx);const reps=posts.filter(r=>r.kind==='join'&&r.parent===p.id);
   const canJoin=game.players.includes(me)&&p.by!==me&&!reps.some(r=>r.by===me)&&JOINABLE.test(t)&&game.status==='playing'&&!p.card;
   return `<div class="post"><div class="meta"><b>${esc(nm(p.by))}</b>${p.kind==='bonus'?' (bonus card)':''} ${chip}<span>+${p.pts}</span><span>${when}</span>${heartBtn(deck,p.idx)}</div>
