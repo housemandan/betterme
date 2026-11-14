@@ -313,21 +313,32 @@ function openGame(id){location.hash=id?id:'home'}
    The game then lists the new browser under devices/deviceList, and it plays as that seat. */
 const FVx=()=>firebase.firestore.FieldValue;
 function claimBox(){
-  if(!game||game.players.includes(me))return '';
-  const humans=game.players.filter(p=>!isBot(p));if(!humans.length)return '';
-  const mine=(game.claims||{})[AUTH];
+  if(!game||game.players.includes(me)||game.status==='over')return '';
+  const humans=game.players.filter(p=>!isBot(p));if(!humans.length||game.practice)return '';
+  const mine=(game.claims||{})[AUTH],req=(game.joinReqs||{})[AUTH];
   if(mine)return `<section class="panel"><h2>Waiting for a yes 👋</h2><p>You asked to continue as <b>${esc(nameOf(mine.seat))}</b> on this device.
     Open this game on your other phone or browser and tap <b>Yes</b>${game.host&&game.host!==mine.seat?`, or ask <b>${esc(nameOf(game.host))}</b> (the host) to tap it`:''}. This page updates by itself.</p>
     <div class="row"><button class="small" data-act="claimcancel">Cancel</button></div></section>`;
-  return `<section class="panel"><h2>Already in this game on another device?</h2>
-    <p class="muted">If you joined from another phone or browser (or from a chat app), you can keep playing here as the same player.</p>
+  if(req)return `<section class="panel"><h2>Asked to join 👋</h2><p>Any player in this game can let you in. Once they tap “Let them in”, you’ll start with 0 points and take your turn after everyone else. This page updates by itself.</p>
+    <div class="row"><button class="small" data-act="joinreqcancel">Cancel</button></div></section>`;
+  if(ui.justWatch)return '';
+  const full=game.players.length>=MAXP;
+  return `<section class="panel"><h2>Want to play?</h2>
+    ${full?'':`<p><b>New here?</b> Ask to join this game as <b>${esc(myName)}</b>. A player lets you in, and you start with 0 points.</p>
+    <div class="row"><button class="primary" data-act="joinreq">Ask to join</button></div>`}
+    <p style="margin-top:14px"><b>Already playing on another phone or browser?</b> Pick your name to keep playing here as the same player.</p>
     <div class="row"><div class="field" style="flex:1;min-width:160px;margin:0"><label for="claimseat">I’m…</label><select id="claimseat">${humans.map(p=>`<option value="${esc(p)}">${esc(nameOf(p))}</option>`).join('')}</select></div>
-    <button class="primary" data-act="claimask" style="align-self:flex-end">Continue as me here</button></div></section>`;
+    <button class="small" data-act="claimask" style="align-self:flex-end">Continue as me here</button></div>
+    <div class="row" style="margin-top:10px"><button class="link" data-act="justwatch">No thanks, just watching</button></div></section>`;
 }
 function approvalBox(){
   if(!game||!game.players.includes(me))return '';
   const list=Object.entries(game.claims||{}).filter(([u,c])=>c&&u!==AUTH&&game.players.includes(c.seat)&&(c.seat===me||game.host===me));
-  return list.map(([u,c])=>`<section class="panel" style="border:2px solid var(--hintLine);background:var(--hintBg);color:var(--hintFg)">
+  const joins=game.status==='playing'&&game.players.length<MAXP?Object.entries(game.joinReqs||{}).filter(([u,r])=>r&&!game.players.includes(u)):[];
+  return joins.map(([u,r])=>`<section class="panel" style="border:2px solid var(--hintLine);background:var(--hintBg);color:var(--hintFg)">
+    <h2 style="color:inherit">👋 ${esc(r.name||'Someone')} wants to join</h2>
+    <p>They’ll start with 0 points and take their turn after ${esc(nameOf(game.players[game.players.length-1]))}. If you don’t know who this is, tap Not now.</p>
+    <div class="row"><button class="primary" data-act="joinyes" data-arg="${esc(u)}">Let them in</button><button class="small" data-act="joinno" data-arg="${esc(u)}">Not now</button></div></section>`).join('')+list.map(([u,c])=>`<section class="panel" style="border:2px solid var(--hintLine);background:var(--hintBg);color:var(--hintFg)">
     <h2 style="color:inherit">📱 Continue as ${c.seat===me?'you':esc(nameOf(c.seat))} on another device?</h2>
     <p>Someone${c.name?` (named “${esc(c.name)}” there)`:''} wants to play as <b>${esc(nameOf(c.seat))}</b> from another phone or browser.
     ${c.seat===me?'If that’s you on your other device, tap Yes.':`If that’s really ${esc(nameOf(c.seat))} (for example they opened the link twice), tap Yes.`}</p>
@@ -339,6 +350,12 @@ async function claimCancel(){await G().update({['claims.'+AUTH]:FVx().delete()})
 async function claimYes(u){const c=(game.claims||{})[u];if(!c||!(c.seat===me||game.host===me)||!game.players.includes(c.seat))return;
   await G().update({['devices.'+u]:c.seat,deviceList:FVx().arrayUnion(u),['claims.'+u]:FVx().delete()})}
 async function claimNo(u){await G().update({['claims.'+u]:FVx().delete()})}
+/* Late join (Dan, 2026-11-14): someone new opens the link after the start, asks, and any player lets them in. */
+async function joinReq(){if(!myName||game.players.includes(me))return;await G().update({['joinReqs.'+AUTH]:{name:myName,at:Date.now()}})}
+async function joinReqCancel(){await G().update({['joinReqs.'+AUTH]:FVx().delete()})}
+async function joinYes(u){const r=(game.joinReqs||{})[u];if(!r||!game.players.includes(me)||game.players.includes(u)||game.players.length>=MAXP)return;
+  await G().update({players:FVx().arrayUnion(u),['names.'+u]:r.name||'Player',['joinReqs.'+u]:FVx().delete()})}
+async function joinNo(u){await G().update({['joinReqs.'+u]:FVx().delete()})}
 
 /* ---------- turn alerts (Dan, 2026-11-14) ----------
    Off until a player taps "Turn on" (one per phone/computer). A free Cloudflare Worker (build/push-worker.js) sends them.
@@ -1006,7 +1023,7 @@ function cardBox(cat,idx,extra){
 function turnPanel(){
   if(game.status==='over')return `<section class="panel"><h2>Game over</h2><p class="muted">Keep checking off your commitments below. Start a new game any time from "My games".</p></section>`;
   const cur=curPlayer();
-  if(!game.players.includes(me))return `<section class="panel"><h2>${esc(nm(cur))} is up</h2><p class="muted">This game already started, so you’re watching. Already a player on another device? Use the box at the top.</p></section>`;
+  if(!game.players.includes(me))return `<section class="panel"><h2>${esc(nm(cur))} is up</h2><p class="muted">This game already started, so you’re watching. To play, use “Ask to join” at the top.</p></section>`;
   if(!myTurn()&&isBot(cur))return `<section class="panel" id="waitbox"><h2>${esc(nm(cur))} is taking a turn…</h2><p class="muted">Computer players move by themselves in a couple of seconds.</p></section>`;
   if(!myTurn()){
     const days=game.lastMoveAt?Math.max(0,Math.floor((Date.now()-game.lastMoveAt)/86400000)):0;
@@ -1263,7 +1280,7 @@ document.addEventListener('click',e=>{
   if(a==='copylink'){copyText(SITE_URL+'#'+gid,'Link copied. Paste it into WhatsApp, Messenger or LINE.','roomlink');return}
   if(a==='nudge'){copyText(`${nameOf(curPlayer())}, it’s your turn in Better Me (${game.name||'our game'})! ${SITE_URL}#${gid}`,'Copied. Paste it into WhatsApp, Messenger, LINE or a text.','');return}
   const map={savename:saveName,new:newGame,join:joinGame,spin,pass:passCard,save:saveCard,post:postAnswer,skip:skipTurn,endnow:endNow,
-    suggest:addSuggestion,practice:newPractice,plus:()=>plusOne(arg),remove:()=>removePlayer(arg),claimask:claimAsk,claimcancel:claimCancel,claimyes:()=>claimYes(arg),claimno:()=>claimNo(arg),alertson:alertsEnable,alertsoff:alertsDisable,
+    suggest:addSuggestion,practice:newPractice,plus:()=>plusOne(arg),remove:()=>removePlayer(arg),claimask:claimAsk,claimcancel:claimCancel,claimyes:()=>claimYes(arg),claimno:()=>claimNo(arg),joinreq:joinReq,joinreqcancel:joinReqCancel,joinyes:()=>joinYes(arg),joinno:()=>joinNo(arg),justwatch:()=>{ui.justWatch=true},alertson:alertsEnable,alertsoff:alertsDisable,
     start:()=>startGame(+(($('#target')||{}).value||2)),choose:()=>choose(arg),playsaved:()=>playSaved(+arg),
     joinpost:()=>joinIn(arg),done:()=>markDone(arg),ffpost:()=>postFF(arg),note:()=>addNote(arg),asknote:()=>{const p=posts.find(x=>x.id===arg);return addNote(arg,p?`How’s it going with: ${p.commit.text}?`:'')},heart:()=>{const [c,i]=arg.split(':');return toggleHeart(c,+i)}};
   if(map[a])act(map[a]);
