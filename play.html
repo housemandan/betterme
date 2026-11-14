@@ -333,7 +333,7 @@ function route(){
   gid=next;game=null;me=AUTH;posts=[];postsReady=false;seenFull=null;seenPosts=null;party=null;ui.joinOpen=null;ui.commitOpen=false;ui.pts=1;ui.msg='';
   if(unGame)unGame();if(unPosts)unPosts();unGame=unPosts=null;stopChat();
   if(gid){
-    unGame=fs.collection('games').doc(gid).onSnapshot(s=>{const before=game;game=s.exists?Object.assign({id:s.id},s.data()):false;me=game?seatOf(game):AUTH;render();maybeBot();syncChat();
+    unGame=fs.collection('games').doc(gid).onSnapshot(s=>{const before=game;game=s.exists?Object.assign({id:s.id},s.data()):false;me=game?seatOf(game):AUTH;render();maybeBot();syncChat();noteViewer();
       /* This browser just moved the turn on (posted, skipped, started, removed someone): ask the alert sender to tell whoever is up. */
       if(s.metadata.hasPendingWrites&&game&&before&&game.status==='playing'&&(before.turn!==game.turn||before.status!=='playing'||before.players.length!==game.players.length))pingTurn()},()=>{game=false;render();syncChat()});
     unPosts=fs.collection('games').doc(gid).collection('posts').orderBy('at','asc').onSnapshot(s=>{posts=s.docs.map(d=>Object.assign({id:d.id},d.data()));postsReady=true;render();maybeBot()},()=>{});
@@ -356,7 +356,7 @@ function claimBox(){
     <div class="row"><button class="small" data-act="claimcancel">Cancel</button></div></section>`;
   if(req)return `<section class="panel"><h2>Asked to join 👋</h2><p>Any player in this game can let you in. Once they tap “Let them in”, you’ll start with 0 points and take your turn after everyone else. This page updates by itself.</p>
     <div class="row"><button class="small" data-act="joinreqcancel">Cancel</button></div></section>`;
-  if(ui.justWatch)return '';
+  if(ui.justWatch)return `<p class="small muted">👀 You’re watching. The players can see that you opened this game.</p>`;
   const full=game.players.length>=MAXP;
   return `<section class="panel"><h2>Want to play?</h2>
     ${full?'':`<p><b>New here?</b> Ask to join this game as <b>${esc(myName)}</b>. A player lets you in, and you start with 0 points.</p>
@@ -364,13 +364,14 @@ function claimBox(){
     <p style="margin-top:14px"><b>Already playing on another phone or browser?</b> Pick your name to keep playing here as the same player.</p>
     <div class="row"><div class="field" style="flex:1;min-width:160px;margin:0"><label for="claimseat">I’m…</label><select id="claimseat">${humans.map(p=>`<option value="${esc(p)}">${esc(nameOf(p))}</option>`).join('')}</select></div>
     <button class="small" data-act="claimask" style="align-self:flex-end">Continue as me here</button></div>
-    <div class="row" style="margin-top:10px"><button class="link" data-act="justwatch">No thanks, just watching</button></div></section>`;
+    <div class="row" style="margin-top:10px"><button class="link" data-act="justwatch">No thanks, just watching</button></div>
+    <p class="small muted" style="margin-top:10px">👀 The players can see that you opened this game.</p></section>`;
 }
 function approvalBox(){
   if(!game||!game.players.includes(me))return '';
   const list=Object.entries(game.claims||{}).filter(([u,c])=>c&&u!==AUTH&&game.players.includes(c.seat)&&(c.seat===me||game.host===me));
   const joins=game.status==='playing'&&game.players.length<MAXP?Object.entries(game.joinReqs||{}).filter(([u,r])=>r&&!game.players.includes(u)):[];
-  return joins.map(([u,r])=>`<section class="panel" style="border:2px solid var(--hintLine);background:var(--hintBg);color:var(--hintFg)">
+  return visitorsBox()+joins.map(([u,r])=>`<section class="panel" style="border:2px solid var(--hintLine);background:var(--hintBg);color:var(--hintFg)">
     <h2 style="color:inherit">👋 ${esc(r.name||'Someone')} wants to join</h2>
     <p>They’ll start with 0 points and take their turn after ${esc(nameOf(game.players[game.players.length-1]))}. If you don’t know who this is, tap Not now.</p>
     <div class="row"><button class="primary" data-act="joinyes" data-arg="${esc(u)}">Let them in</button><button class="small" data-act="joinno" data-arg="${esc(u)}">Not now</button></div></section>`).join('')+list.map(([u,c])=>`<section class="panel" style="border:2px solid var(--hintLine);background:var(--hintBg);color:var(--hintFg)">
@@ -385,8 +386,29 @@ async function claimCancel(){await G().update({['claims.'+AUTH]:FVx().delete()})
 async function claimYes(u){const c=(game.claims||{})[u];if(!c||!(c.seat===me||game.host===me)||!game.players.includes(c.seat))return;
   await G().update({['devices.'+u]:c.seat,deviceList:FVx().arrayUnion(u),['claims.'+u]:FVx().delete()})}
 async function claimNo(u){await G().update({['claims.'+u]:FVx().delete()})}
+/* Visitors (Dan, 2026-11-14): anyone with the link can read the story, so players get a heads-up when someone
+   who isn't playing opens it. The visitor's browser writes viewers.<its id> = {name, at} once per visit (rules allow
+   only their own entry); players see "👀 Dee opened this game's link" until they tap Got it (remembered per browser). */
+let viewerSent=null;
+function noteViewer(){
+  if(!game||!gid||viewerSent===gid||game.practice||game.status!=='playing'||game.players.includes(me))return;
+  viewerSent=gid;G().update({['viewers.'+AUTH]:{name:myName||'',at:Date.now()}}).catch(e=>console.warn('viewer',e&&e.code));
+}
+function visSeen(){try{return JSON.parse(lsGet('bm_vis_'+gid)||'{}')||{}}catch(e){return {}}}
+function visitors(){const seen=visSeen(),dev=game.devices||{},jr=game.joinReqs||{},cl=game.claims||{};
+  return Object.entries(game.viewers||{}).filter(([u,v])=>v&&!game.players.includes(u)&&!dev[u]&&!jr[u]&&!cl[u]&&u!==AUTH
+    &&Date.now()-(v.at||0)<7*864e5&&!(seen[u]&&(v.at||0)-seen[u]<12*36e5))}
+function visitorsBox(){
+  const vs=visitors();if(!vs.length)return '';
+  const names=vs.map(([u,v])=>v.name?esc(v.name):'Someone');
+  const who=names.length===1?names[0]:names.slice(0,-1).join(', ')+' and '+names[names.length-1];
+  return `<section class="panel small" style="border:1px dashed var(--line)"><p style="margin:0">👀 <b>${who}</b> opened this game’s link but ${vs.length===1?'isn’t':'aren’t'} playing. Anyone with the link can read the story.
+    <button class="small" data-act="visok" style="margin-left:6px">Got it</button></p></section>`;
+}
+function visOk(){const s=visSeen();visitors().forEach(([u,v])=>s[u]=v.at||Date.now());lsSet('bm_vis_'+gid,JSON.stringify(s))}
 /* Late join (Dan, 2026-11-14): someone new opens the link after the start, asks, and any player lets them in. */
-async function joinReq(){if(!myName||game.players.includes(me))return;await G().update({['joinReqs.'+AUTH]:{name:myName,at:Date.now()}})}
+async function joinReq(){if(!myName||game.players.includes(me))return;await G().update({['joinReqs.'+AUTH]:{name:myName,at:Date.now()}});
+  if(PUSH_URL)pushCall('/joinping').catch(e=>console.warn('joinping',e))}
 async function joinReqCancel(){await G().update({['joinReqs.'+AUTH]:FVx().delete()})}
 async function joinYes(u){const r=(game.joinReqs||{})[u];if(!r||!game.players.includes(me)||game.players.includes(u)||game.players.length>=MAXP)return;
   await G().update({players:FVx().arrayUnion(u),['names.'+u]:r.name||'Player',['joinReqs.'+u]:FVx().delete()})}
@@ -1172,6 +1194,7 @@ function lobby(){
   return `<section class="panel"><h2>Waiting for players</h2>
   <p class="muted">Send this link to your friends. They tap it, type their name, and tap "Join". 2 to ${MAXP} players.</p>
   <div class="row"><input id="roomlink" readonly value="${esc(link)}" style="flex:1;min-width:200px"><button class="small" data-act="copylink">Copy link</button></div>
+  <p class="small muted">🔒 Heads-up: anyone with this link can open the game and read what everyone posts, even after it starts. Share it only with people you’d be happy to have read along, and post only what you’re comfortable with them seeing.</p>
   <div class="players">${game.players.map(p=>`<div class="pl"><div class="spread"><div class="who"><span>${esc(nm(p))}</span>${p===game.host?'<span class="tag">Host</span>':''}</div>${game.host===me&&p!==me?`<button class="small" data-act="remove" data-arg="${esc(p)}">Remove</button>`:''}</div></div>`).join('')}</div>
   <div class="row">${inGame?'':(game.players.length<MAXP?`<button class="primary big" data-act="join">Join this game</button>`:'<span class="muted">This game is full.</span>')}
   ${game.host===me?`<div class="field" style="max-width:220px"><label for="target">Points per category to win</label><select id="target"><option value="1">1 (short, about 5 turns each)</option><option value="2" selected>2 (medium)</option><option value="3">3 (long, classic)</option></select></div>
@@ -1228,7 +1251,7 @@ function turnPanel(){
     const mine=scores()[me];
     return `<section class="panel"><h2>Fall Forward</h2>${cardBox('FF',p.idx)}
     <div class="row small muted">${heartBtn('FF',p.idx)}</div>
-    <div class="field"><label for="ans">Your answer (optional: on a call, just say it out loud)</label><textarea id="ans" rows="4" placeholder="A setback that made you stronger…"></textarea></div>
+    <div class="field"><label for="ans">Your answer (optional: on a call, just say it out loud)</label><textarea id="ans" rows="4" placeholder="A setback that made you stronger…"></textarea><div class="small muted privnote">🔒 Anyone with this game’s link can read what you post.</div></div>
     <div class="field"><label>Setbacks make us stronger. Take 1 point in any category:</label>
     <div class="catpick">${KEYS.map(k=>`<button data-act="ffpost" data-arg="${k}" style="background:${col(k)}">${CATS[k].name}${mine[k]>=game.target?'<span class="gem onbtn" style="--c:#fff"></span>':''}</button>`).join('')}</div></div>
     <div class="row"><button data-act="pass">Pass</button></div></section>`;
@@ -1245,7 +1268,7 @@ function turnPanel(){
     ${lim.other?`<label class="row" style="color:var(--fg)"><input type="checkbox" style="width:auto" ${ui.optOther?'checked':''} data-act="opt" data-arg="other"> ${esc(lim.other)}${plus(lim.otherPts)}</label>`:''}`;
   return `<section class="panel"><h2>Your card</h2>${cardBox(p.cat,p.idx)}
   <div class="row small muted">${heartBtn(p.cat,p.idx)}<span>Tap the heart if this card helped you or you love it. Hearted cards always stay in your deck.</span></div>
-  <div class="field"><label for="ans">Your answer (optional: on a call, just say it out loud)</label><textarea id="ans" rows="4" placeholder="Type it, use your phone’s mic key, or leave it blank if you shared out loud."></textarea></div>
+  <div class="field"><label for="ans">Your answer (optional: on a call, just say it out loud)</label><textarea id="ans" rows="4" placeholder="Type it, use your phone’s mic key, or leave it blank if you shared out loud."></textarea><div class="small muted privnote">🔒 Anyone with this game’s link can read what you post.</div></div>
   <div class="field" id="ptsbox"><label>Your points (tick what applies)</label>${opts}
   ${lim.commit?`<label class="row" style="color:var(--fg)"><input type="checkbox" id="c_on" style="width:auto" ${ui.commitOpen?'checked':''} data-act="commit"> I’m making a commitment${plus(lim.commit)}</label>`:''}
   <div class="note" style="font-weight:700">You get ${ui.pts} point${ui.pts===1?'':'s'} in ${CATS[p.cat].name}${capNote}</div></div>
@@ -1461,7 +1484,7 @@ document.addEventListener('click',e=>{
   if(a==='copylink'){copyText(SITE_URL+'#'+gid,'Link copied. Paste it into WhatsApp, Messenger or LINE.','roomlink');return}
   if(a==='nudge'){copyText(`${nameOf(curPlayer())}, it’s your turn in Better Me (${game.name||'our game'})! ${SITE_URL}#${gid}`,'Copied. Paste it into WhatsApp, Messenger, LINE or a text.','');return}
   const map={savename:saveName,new:newGame,join:joinGame,spin,pass:passCard,save:saveCard,post:postAnswer,skip:skipTurn,endnow:endNow,
-    suggest:addSuggestion,practice:newPractice,plus:()=>plusOne(arg),remove:()=>removePlayer(arg),claimask:claimAsk,claimcancel:claimCancel,claimyes:()=>claimYes(arg),claimno:()=>claimNo(arg),joinreq:joinReq,joinreqcancel:joinReqCancel,joinyes:()=>joinYes(arg),joinno:()=>joinNo(arg),justwatch:()=>{ui.justWatch=true},alertson:alertsEnable,alertsoff:alertsDisable,
+    suggest:addSuggestion,practice:newPractice,plus:()=>plusOne(arg),remove:()=>removePlayer(arg),claimask:claimAsk,claimcancel:claimCancel,claimyes:()=>claimYes(arg),claimno:()=>claimNo(arg),joinreq:joinReq,joinreqcancel:joinReqCancel,joinyes:()=>joinYes(arg),joinno:()=>joinNo(arg),justwatch:()=>{ui.justWatch=true},visok:visOk,alertson:alertsEnable,alertsoff:alertsDisable,
     start:()=>startGame(+(($('#target')||{}).value||2)),choose:()=>choose(arg),playsaved:()=>playSaved(+arg),
     joinpost:()=>joinIn(arg),done:()=>markDone(arg),ffpost:()=>postFF(arg),note:()=>addNote(arg),asknote:()=>{const p=posts.find(x=>x.id===arg);return addNote(arg,p?`How’s it going with: ${p.commit.text}?`:'')},heart:()=>{const [c,i]=arg.split(':');return toggleHeart(c,+i)}};
   if(map[a])act(map[a]);
