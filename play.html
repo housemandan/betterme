@@ -20,7 +20,7 @@
   --teal:#13879a; --lav:#7a66d6; --accentFg:#ffffff; --danger:#c2410c;
   --space1:#140d36; --space2:#2f1f72; --space3:#1b5f7a;
   --cardBg:#ffffff; --cardFg:#1a1a1a;
-  --H:#e0605a; --M:#e2a614; --B:#5b7fdc; --P:#45ad4a; --T:#d9758c;
+  --H:#e0605a; --M:#e2a614; --B:#5b7fdc; --P:#45ad4a; --T:#d9758c; --FF:#7d86a3; --HH:#22a99a;
   --display:"Cinzel",Georgia,serif; --body:"Nunito Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
   color-scheme:light;
 }
@@ -120,6 +120,16 @@ button.heart.on{color:#d9334a;border-color:#d9334a66;background:#d9334a12}
   .party i{animation:sparkle 2.6s ease-in var(--d) forwards}
   @keyframes sparkle{0%{opacity:1;transform:translateY(0) rotate(45deg)}100%{opacity:0;transform:translateY(85vh) rotate(405deg)}}
 }
+/* Spinner reel: one slot-machine column of category names that slows down and lands. */
+.reelwrap{position:fixed;inset:0;z-index:60;display:grid;place-items:center;background:#120d2c88;backdrop-filter:blur(2px)}
+.reelbox{width:min(80vw,300px);height:84px;overflow:hidden;border-radius:18px;border:4px solid #fff;box-shadow:0 0 0 4px var(--lav),0 16px 40px #0007;background:#fff}
+.reel{transition:transform 1.8s cubic-bezier(.12,.72,.18,1)}
+.reelitem{height:84px;display:grid;place-items:center;color:#fff;font:700 1.6rem var(--display);letter-spacing:.06em;text-shadow:0 2px 4px #0006;text-transform:uppercase}
+.reelwrap.landed .reelbox{animation:landpop .5s ease-out}
+@keyframes landpop{0%{transform:scale(1)}40%{transform:scale(1.12)}100%{transform:scale(1)}}
+.catpick button{position:relative}
+.gem.onbtn{width:11px;height:11px;margin-left:8px;vertical-align:1px}
+.fullnote{display:block;font-size:.7rem;letter-spacing:.08em;opacity:.9;margin-top:2px}
 /* Point chip: a round token in the category color that floats up and fades. */
 .chips{position:fixed;left:50%;bottom:22%;transform:translateX(-50%);z-index:49;pointer-events:none;display:flex;gap:14px}
 .ptchip{display:flex;flex-direction:column;align-items:center;gap:4px;opacity:0;animation:chipin 2.4s ease-out var(--d) forwards}
@@ -168,7 +178,10 @@ const FIREBASE_CONFIG = {
   appId: "1:385247377726:web:5176e8508a03b9e4e7946f"
 };
 
-const CATS={H:{name:'Heart',v:'--H'},M:{name:'Mind',v:'--M'},B:{name:'Body',v:'--B'},P:{name:'People',v:'--P'},T:{name:'Tangibles',v:'--T'}};
+const CATS={H:{name:'Heart',v:'--H'},M:{name:'Mind',v:'--M'},B:{name:'Body',v:'--B'},P:{name:'People',v:'--P'},T:{name:'Tangibles',v:'--T'},
+  FF:{name:'Fall Forward',v:'--FF'},HH:{name:'Helping Hand',v:'--HH'}};
+/* The spinner, weighted like the printed board: each category about 4 spaces, Fall Forward 2, Helping Hand 1 to 2. */
+const SPIN=[['H',8],['M',8],['B',8],['P',8],['T',8],['FF',4],['HH',3]];
 const KEYS=['H','M','B','P','T'];
 const SITE_URL='https://bettermegame.com/play.html';
 const MAXP=8;
@@ -318,24 +331,53 @@ function heartBtn(c,i){
   return `<button class="small heart ${on?'on':''}" data-act="heart" data-arg="${c}:${i}" aria-pressed="${on}" title="${on?'You love this card':'Love this card'}">${on?'♥':'♡'} ${n}</button>`;
 }
 function pickIdx(cat){
-  const used=new Set(posts.filter(p=>p.cat===cat&&p.idx!=null).map(p=>p.idx));
+  const used=new Set(posts.filter(p=>(p.card||p.cat)===cat&&p.idx!=null).map(p=>p.idx));
   const all=DECKS[cat].map((_,i)=>i).filter(i=>inMyDeck(cat,i));let free=all.filter(i=>!used.has(i));if(!free.length)free=all;
   return free[Math.floor(Math.random()*free.length)];
 }
+function spinResult(){let n=Math.random()*SPIN.reduce((a,s)=>a+s[1],0);for(const [k,w] of SPIN){if((n-=w)<0)return k}return 'H'}
+/* A one-column slot-machine reel that lands on the result. Drawn outside the page so screen refreshes don't cut it off. */
+function reel(result){
+  return new Promise(done=>{
+    if(window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches)return done();
+    const order=SPIN.map(s=>s[0]);const items=[];for(let i=0;i<26;i++)items.push(order[(i*3+Math.floor(Math.random()*7))%order.length]);items.push(result);
+    const el=document.createElement('div');el.className='reelwrap';
+    el.innerHTML=`<div class="reelbox"><div class="reel">${items.map(k=>`<div class="reelitem" style="background:${col(k)}">${CATS[k].name}</div>`).join('')}</div></div>`;
+    document.body.appendChild(el);
+    const strip=el.querySelector('.reel');const h=el.querySelector('.reelitem').offsetHeight;
+    requestAnimationFrame(()=>{strip.style.transform=`translateY(-${(items.length-1)*h}px)`});
+    setTimeout(()=>{el.classList.add('landed')},1900);
+    setTimeout(()=>{el.remove();done()},2700);
+  });
+}
+let spinning=false;
 async function spin(){
-  if(!myTurn()||game.pending)return;
-  const cat=KEYS[Math.floor(Math.random()*5)];
-  if(scores()[me][cat]>=game.target)await G().update({pending:{choose:true,why:'wild',from:cat}});
-  else await G().update({pending:{cat,idx:pickIdx(cat)}});
+  if(!myTurn()||game.pending||spinning)return;
+  const r=spinResult();spinning=true;
+  try{await reel(r)}finally{spinning=false}
+  if(r==='FF')return G().update({pending:{ff:true,idx:pickIdx('FF')}});
+  if(r==='HH')return G().update({pending:{choose:true,why:'hh'}});
+  if(scores()[me][r]>=game.target)await G().update({pending:{choose:true,why:'wild',from:r}});
+  else await G().update({pending:{cat:r,idx:pickIdx(r)}});
 }
 async function choose(cat){
   const p=game.pending;if(!myTurn()||!p||!p.choose)return;
-  await G().update({pending:{cat,idx:pickIdx(cat)}});
+  await G().update({pending:Object.assign({cat,idx:pickIdx(cat)},p.why==='hh'?{hh:true}:{})});
 }
 async function playSaved(i){
   if(!myTurn()||game.pending)return;
   const mine=((game.saved||{})[me]||[]).slice();const c=mine.splice(i,1)[0];if(!c)return;
+  if(c.gift)return G().update({pending:{choose:true,why:'gift',from:c.from||null},['saved.'+me]:mine});
   await G().update({pending:{cat:c.cat,idx:c.idx,fromSaved:true},['saved.'+me]:mine});
+}
+/* Fall Forward: read the card, share a setback that made you stronger, take 1 point in any category you pick. */
+async function postFF(cat){
+  const p=game.pending;if(!myTurn()||!p||!p.ff||!KEYS.includes(cat))return;
+  const post={by:me,cat,card:'FF',idx:p.idx,text:((($('#ans')||{}).value)||'').trim().slice(0,4000),pts:1,kind:'turn',at:Date.now()};
+  await POSTS().add(post);
+  const r=checkEnd(posts.concat(post));
+  if(r.winners.length)await G().update({status:'over',winner:r.winners[0],pending:null,lastMoveAt:Date.now()});
+  else await G().update(nextTurnPatch());
 }
 function nextTurnPatch(){return {turn:(game.turn+1)%game.players.length,pending:null,lastMoveAt:Date.now()}}
 function checkEnd(list){
@@ -366,15 +408,19 @@ async function postAnswer(){
   syncPts(p);
   const post={by:me,cat:p.cat,idx:p.idx,text:((($('#ans')||{}).value)||'').trim().slice(0,4000),pts:ui.pts,kind:'turn',at:Date.now()};
   const c=readCommit();if(c===false)return;if(c)post.commit=c;
+  /* Helping Hand: also give another player a free card of any category, saved for their turn. */
+  let gift=null;
+  if(p.hh){const to=($('#hh_to')||{}).value;if(to&&game.players.includes(to)&&to!==me){gift=to;post.helped=to}}
   await POSTS().add(post);
   const r=checkEnd(posts.concat(post));
+  const extra=gift?{['saved.'+gift]:((game.saved||{})[gift]||[]).concat({gift:true,from:me})}:{};
   if(r.winners.length)await G().update({status:'over',winner:r.winners[0],pending:null,lastMoveAt:Date.now()});
-  else await G().update(nextTurnPatch());
+  else await G().update(Object.assign(extra,nextTurnPatch()));
   ui.pts=1;ui.ptsFor=null;ui.commitOpen=false;
 }
 async function passCard(){
   const p=game.pending;if(!myTurn()||!p||p.choose)return;
-  await POSTS().add({by:me,cat:p.cat,idx:p.idx,text:'',pts:0,kind:'pass',at:Date.now()});
+  await POSTS().add(Object.assign({by:me,cat:p.ff?null:p.cat,idx:p.idx,text:'',pts:0,kind:'pass',at:Date.now()},p.ff?{card:'FF'}:{}));
   await G().update(nextTurnPatch());
 }
 async function saveCard(){
@@ -547,11 +593,25 @@ function turnPanel(){
   if(!p){
     return `<section class="panel"><h2>Your turn</h2><p class="muted">Spin to get a category. Answer the card, take your points, and the turn passes on.</p>
     <div class="row"><button class="primary big" data-act="spin">Spin</button></div>
-    ${saved.length?`<div class="field"><label>Or play a card you saved</label><div class="row">${saved.map((c,i)=>`<button class="small" data-act="playsaved" data-arg="${i}" style="border-color:${col(c.cat)}">${CATS[c.cat].name} card</button>`).join('')}</div></div>`:''}</section>`;
+    ${saved.length?`<div class="field"><label>Or play a card you saved</label><div class="row">${saved.map((c,i)=>c.gift?`<button class="small" data-act="playsaved" data-arg="${i}" style="border-color:var(--HH)">Helping Hand from ${esc(nameOf(c.from))} (any category)</button>`:`<button class="small" data-act="playsaved" data-arg="${i}" style="border-color:${col(c.cat)}">${CATS[c.cat].name} card</button>`).join('')}</div></div>`:''}</section>`;
   }
   if(p.choose){
-    const title=`You spun ${CATS[p.from].name}, which you’ve already fulfilled. It’s wild: pick any category.`;
-    return `<section class="panel"><h2>${title}</h2><div class="catpick">${KEYS.map(k=>`<button data-act="choose" data-arg="${k}" style="background:${col(k)}">${CATS[k].name}</button>`).join('')}</div></section>`;
+    const title=p.why==='hh'?'Helping Hand! Pick any category for your card. After you answer, you’ll give another player a free card too.'
+      :p.why==='gift'?`${esc(nameOf(p.from))} gave you a Helping Hand. Pick any category.`
+      :`You spun ${CATS[p.from].name}, which you’ve already fulfilled. It’s wild: pick any category.`;
+    const mine=scores()[me];
+    return `<section class="panel"><h2>${title}</h2><div class="catpick">${KEYS.map(k=>{const full=mine[k]>=game.target;
+      return `<button data-act="choose" data-arg="${k}" style="background:${col(k)}">${CATS[k].name}${full?'<span class="gem onbtn" style="--c:#fff" title="Already fulfilled"></span><small class="fullnote">fulfilled</small>':''}</button>`}).join('')}</div>
+      <p class="small muted">Categories with a gem are already full. You can still pick them.</p></section>`;
+  }
+  if(p.ff){
+    const mine=scores()[me];
+    return `<section class="panel"><h2>Fall Forward</h2>${cardBox('FF',p.idx)}
+    <div class="row small muted">${heartBtn('FF',p.idx)}</div>
+    <div class="field"><label for="ans">Your answer (optional: on a call, just say it out loud)</label><textarea id="ans" rows="4" placeholder="A setback that made you stronger…"></textarea></div>
+    <div class="field"><label>Setbacks make us stronger. Take 1 point in any category:</label>
+    <div class="catpick">${KEYS.map(k=>`<button data-act="ffpost" data-arg="${k}" style="background:${col(k)}">${CATS[k].name}${mine[k]>=game.target?'<span class="gem onbtn" style="--c:#fff"></span>':''}</button>`).join('')}</div></div>
+    <div class="row"><button data-act="pass">Pass</button></div></section>`;
   }
   const lim=ptsLimit(p.cat,p.idx);syncPts(p);
   const plus=n=>n?` <b>(+${n})</b>`:'';
@@ -570,6 +630,7 @@ function turnPanel(){
     <div class="row"><div class="field" style="flex:1;min-width:160px"><label for="c_partner">Accountability partner</label><select id="c_partner">${others().map(o=>`<option value="${esc(o)}">${esc(nm(o))}</option>`).join('')}</select></div>
     <div class="field" style="flex:1;min-width:160px"><label for="c_due">Check-in date (needed)</label><input type="date" id="c_due" required min="${new Date().toISOString().slice(0,10)}"></div></div>
   </div>
+  ${p.hh&&others().length?`<div class="field note"><label for="hh_to">Helping Hand: who gets a free card (any category) on their next turn?</label><select id="hh_to">${others().map(o=>`<option value="${esc(o)}">${esc(nm(o))}</option>`).join('')}</select></div>`:''}
   <div class="row"><button class="primary" data-act="post">Post and end my turn</button><button data-act="save">Save for later</button><button data-act="pass">Pass</button></div>
   <p class="small muted">No pressure: passing or saving a card is always fine.</p></section>`;
 }
@@ -652,13 +713,14 @@ function joinOpts(p){
 }
 function postLine(p){
   const when=new Date(p.at).toLocaleDateString(undefined,{month:'short',day:'numeric'});
-  const chip=p.cat?`<span class="chip" style="background:${col(p.cat)}">${CATS[p.cat].name}</span>`:'';
+  const chip=(p.card==='FF'?`<span class="chip" style="background:var(--FF)">Fall Forward</span> `:'')+(p.cat?`<span class="chip" style="background:${col(p.cat)}">${CATS[p.cat].name}</span>`:'')
+    +(p.helped?` <span class="chip" style="background:var(--HH)">Helping Hand → ${esc(nm(p.helped))}</span>`:'');
   if(p.kind==='pass')return `<div class="post"><div class="meta"><b>${esc(nm(p.by))}</b> passed on a card ${chip}<span>${when}</span></div></div>`;
   if(p.kind==='saved')return `<div class="post"><div class="meta"><b>${esc(nm(p.by))}</b> saved a ${CATS[p.cat].name} card to gather courage<span>${when}</span></div></div>`;
   if(p.kind==='kept')return `<div class="post"><div class="meta"><b>${esc(nm(p.by))}</b> kept a commitment ${chip}<span>+1</span><span>${when}</span></div><div class="answer">${esc(p.text)}</div></div>`;
-  const t=cardText(p.cat,p.idx);const reps=posts.filter(r=>r.kind==='join'&&r.parent===p.id);
-  const canJoin=game.players.includes(me)&&p.by!==me&&!reps.some(r=>r.by===me)&&JOINABLE.test(t)&&game.status==='playing';
-  return `<div class="post"><div class="meta"><b>${esc(nm(p.by))}</b>${p.kind==='bonus'?' (bonus card)':''} ${chip}<span>+${p.pts}</span><span>${when}</span>${heartBtn(p.cat,p.idx)}</div>
+  const deck=p.card||p.cat;const t=cardText(deck,p.idx);const reps=posts.filter(r=>r.kind==='join'&&r.parent===p.id);
+  const canJoin=game.players.includes(me)&&p.by!==me&&!reps.some(r=>r.by===me)&&JOINABLE.test(t)&&game.status==='playing'&&!p.card;
+  return `<div class="post"><div class="meta"><b>${esc(nm(p.by))}</b>${p.kind==='bonus'?' (bonus card)':''} ${chip}<span>+${p.pts}</span><span>${when}</span>${heartBtn(deck,p.idx)}</div>
   <details class="qline"><summary class="small" style="font-family:var(--body);font-weight:500">The card</summary>${esc(t)}</details>
   ${p.text?`<div class="answer">${esc(p.text)}</div>`:''}
   ${p.commit?`<div class="small muted">Committed: ${esc(p.commit.text)}</div>`:''}
@@ -693,6 +755,8 @@ function rulesBox(){
   <li><b>Answer the card</b> in writing (or with your phone’s mic key).</li>
   <li><b>Take the points</b> the card says. The turn passes to the next player.</li></ol>
   <ul><li>Fill all 5 categories to the target (1, 2 or 3 points, the host picks) to win. Extra points in a full category don’t count.</li>
+  <li><b>Fall Forward</b> (rare): read a card about setbacks, share one that made you stronger, and take 1 point in any category.</li>
+  <li><b>Helping Hand</b> (rare): pick any category for your card, then give another player a free card of any category for their next turn.</li>
   <li>Tap ♡ on any card that helped you. Hearts show which cards people love, and your hearted cards always stay in your deck.</li>
   <li>Cards that say "all players are welcome" can be joined by anyone for the same points.</li>
   <li>Commitments get a partner and a check-in date. Keep one and you earn +1 point.</li>
@@ -730,7 +794,7 @@ document.addEventListener('click',e=>{
   const map={savename:saveName,new:newGame,join:joinGame,spin,pass:passCard,save:saveCard,post:postAnswer,skip:skipTurn,endnow:endNow,
     suggest:addSuggestion,practice:newPractice,plus:()=>plusOne(arg),remove:()=>removePlayer(arg),
     start:()=>startGame(+(($('#target')||{}).value||2)),choose:()=>choose(arg),playsaved:()=>playSaved(+arg),
-    joinpost:()=>joinIn(arg),done:()=>markDone(arg),note:()=>addNote(arg),asknote:()=>{const p=posts.find(x=>x.id===arg);return addNote(arg,p?`How’s it going with: ${p.commit.text}?`:'')},heart:()=>{const [c,i]=arg.split(':');return toggleHeart(c,+i)}};
+    joinpost:()=>joinIn(arg),done:()=>markDone(arg),ffpost:()=>postFF(arg),note:()=>addNote(arg),asknote:()=>{const p=posts.find(x=>x.id===arg);return addNote(arg,p?`How’s it going with: ${p.commit.text}?`:'')},heart:()=>{const [c,i]=arg.split(':');return toggleHeart(c,+i)}};
   if(map[a])act(map[a]);
 });
 boot();
