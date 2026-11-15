@@ -129,6 +129,10 @@ label{font-size:.88rem;font-weight:700;color:var(--muted)}
 .qline{font-size:.9rem;color:var(--muted);border-left:3px solid var(--line);padding-left:10px}
 .replies{display:flex;flex-direction:column;gap:6px;margin-left:12px}
 .reply{border-left:3px solid var(--line);padding-left:10px}
+.reacts{display:flex;flex-wrap:wrap;gap:4px;margin-top:6px}
+button.react{background:none;border:1px solid var(--line);border-radius:999px;padding:1px 8px;font-size:1rem;min-height:30px;color:var(--muted);font-weight:700;box-shadow:none}
+button.react span{font-size:.8rem}
+button.react.on{border-color:var(--teal);background:#0000000a;color:var(--fg)}
 button.heart{background:none;border-color:var(--line);color:var(--muted);font-weight:700}
 button.heart.on{color:#d9334a;border-color:#d9334a66;background:#d9334a12}
 .commit{font-size:.92rem;border:1px dashed var(--line);border-radius:10px;padding:8px 10px}
@@ -259,7 +263,7 @@ const OFFLINE={"M": [0, 1, 4, 10, 11, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42
 /* PTS[deck][i] = [sharing pts, commitment pts, other option label, other option pts, most points allowed] */
 const PTS={"M":[[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[0,2,"I already use a visible affirmation",2,2],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[0,1,"I already use a vision board",1,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,1,"",0,2],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,2,"",0,3],[0,2,"",0,2],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[0,1,"",0,1],[1,0,"",0,1],[1,1,"",0,2],[1,0,"",0,1]],"T":[[1,1,"",0,2],[1,1,"",0,2],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,1,"",0,2],[0,1,"I shared a rewarding time I gave time or money",1,2],[1,0,"",0,1],[1,1,"",0,2],[1,1,"",0,2],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[0,1,"",0,1],[0,1,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,1,"",0,2],[1,0,"",0,1],[0,1,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,1,"",0,2],[1,1,"",0,2],[1,0,"",0,1],[0,1,"",0,1],[1,0,"",0,1],[1,1,"",0,2],[1,0,"",0,1],[1,1,"",0,2],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[0,1,"",0,1],[1,1,"",0,2],[1,0,"",0,1],[1,0,"",0,1],[0,1,"I already have written goals",1,1],[1,0,"",0,1],[1,1,"",0,2]],"B":[[1,0,"",0,1],[1,0,"",0,1],[0,1,"I already read food labels",1,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[0,1,"I’m usually well rested",1,1],[0,1,"I already drink plenty of water",1,2],[1,0,"",0,1],[1,1,"",0,2],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[0,1,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,1,"",0,2],[1,0,"",0,1],[1,1,"",0,2],[1,1,"",0,2],[1,1,"",0,2],[1,0,"",0,1],[1,0,"I’m a doctor, nurse, scientist or inventor",1,2],[1,1,"",0,2],[1,1,"",0,2],[0,1,"",0,1],[1,0,"",0,1],[1,1,"",0,2],[1,1,"",0,2],[1,0,"",0,1],[1,1,"",0,2],[0,1,"",0,1],[1,1,"",0,2],[0,1,"I think my current habits will get me there",1,1],[1,1,"",0,2]],"H":[[1,0,"",0,1],[1,2,"",0,3],[0,1,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[0,2,"",0,2],[0,2,"",0,2],[1,1,"",0,2],[1,0,"",0,1],[1,1,"",0,2],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,1,"",0,2],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[0,2,"I’ve volunteered in the last 3 months",1,3],[1,1,"",0,2],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,1,"",0,2],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1]],"P":[[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,2,"",0,3],[1,0,"",0,1],[0,1,"",0,1],[1,1,"",0,2],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[0,1,"",0,1],[1,1,"",0,2],[1,1,"",0,2],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,1,"",0,2],[1,0,"",0,1],[1,1,"",0,2],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[0,2,"I answered “yes” (I’m a good listener)",1,2],[1,0,"",0,1],[0,2,"",0,2],[1,0,"",0,1],[1,0,"",0,1],[1,1,"",0,2],[0,1,"I have nothing borrowed to return",1,1],[0,1,"I can’t think of an unfulfilled promise",1,1],[0,1,"",0,1],[1,1,"",0,2],[0,1,"",0,1],[0,1,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,1,"",0,2],[1,1,"",0,2],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,1,"",0,2],[1,1,"",0,2],[1,0,"",0,1],[1,1,"",0,2],[0,1,"I told a joke now",1,1]],"FF":[[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1]]};
 
-const BUILD='200fc70fee';
+const BUILD='0c8ecc9b33';
 
 /* ============ QUICK PLAY (bettermegame.com) ============ */
 /* Firebase web config: these values are public by design (they identify the project, they are not passwords). */
@@ -311,7 +315,18 @@ function scores(list){
 }
 function fulfilledCount(sc){return KEYS.filter(k=>sc[k]>=game.target).length}
 function curPlayer(){return game&&game.players[game.turn%game.players.length]}
-function myTurn(){return game&&game.status==='playing'&&curPlayer()===me}
+/* ROUNDS (Dan, 2026-11-15): new games are played in rounds. Everyone plays one card per round, in any order. The next round
+   starts when everyone has played, or 12 hours after only one player is left (that player just misses the round).
+   Older games have no game.mode and still use the classic one-at-a-time turns (see rules-history.md). Each player's half-played
+   card lives in game.pendings[uid] (classic: the single game.pending). roundDone[uid]=round number they finished. */
+const ROUND_WAIT_MS=12*3600*1000;
+function isRounds(){return !!game&&game.mode==='rounds'}
+function roundNo(){return (game&&game.round)||1}
+function isDone(p){return isRounds()&&(game.roundDone||{})[p]===roundNo()}
+function leftThisRound(){return game.players.filter(p=>!isBot(p)&&!isDone(p))}
+function myPend(){return !game?null:isRounds()?((game.pendings||{})[me]||null):(game.pending||null)}
+function pset(v){return isRounds()?{['pendings.'+me]:v}:{pending:v}}
+function myTurn(){if(!game||game.status!=='playing')return false;if(isRounds())return game.players.includes(me)&&!isDone(me);return curPlayer()===me}
 function newId(){const a='abcdefghijkmnpqrstuvwxyz23456789';let s='';const r=new Uint32Array(12);crypto.getRandomValues(r);r.forEach(n=>s+=a[n%a.length]);return s}
 function show(h){$('#main').innerHTML=`<section class="panel">${h}</section>`}
 
@@ -338,7 +353,7 @@ function route(){
   gid=next;game=null;me=AUTH;posts=[];postsReady=false;seenFull=null;seenPosts=null;party=null;ui.joinOpen=null;ui.commitOpen=false;ui.pts=1;ui.msg='';
   if(unGame)unGame();if(unPosts)unPosts();unGame=unPosts=null;stopChat();
   if(gid){
-    unGame=fs.collection('games').doc(gid).onSnapshot(s=>{const before=game;game=s.exists?Object.assign({id:s.id},s.data()):false;me=game?seatOf(game):AUTH;render();maybeBot();syncChat();noteViewer();
+    unGame=fs.collection('games').doc(gid).onSnapshot(s=>{const before=game;game=s.exists?Object.assign({id:s.id},s.data()):false;me=game?seatOf(game):AUTH;render();maybeBot();syncChat();noteViewer();roundsCheck();autoJoinNext();
       /* This browser just moved the turn on (posted, skipped, started, removed someone): ask the alert sender to tell whoever is up. */
       if(s.metadata.hasPendingWrites&&game&&before&&game.status==='playing'&&(before.turn!==game.turn||before.status!=='playing'||before.players.length!==game.players.length))pingTurn()},()=>{game=false;render();syncChat()});
     unPosts=fs.collection('games').doc(gid).collection('posts').orderBy('at','asc').onSnapshot(s=>{posts=s.docs.map(d=>Object.assign({id:d.id},d.data()));postsReady=true;render();maybeBot()},()=>{});
@@ -481,7 +496,7 @@ function alertsSupported(){return !!(PUSH_URL&&'serviceWorker' in navigator&&'Pu
 function alertsOn(){return lsGet('bm_alerts')==='on'&&window.Notification&&Notification.permission==='granted'}
 async function pushCall(path,extra){const token=await firebase.auth().currentUser.getIdToken();
   const r=await fetch(PUSH_URL+path,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(Object.assign({token,gid},extra||{}))});return r.json()}
-function pingTurn(){if(!PUSH_URL||!gid||!game||game.practice)return;pushCall('/notify').catch(e=>console.warn('alert',e))}
+function pingTurn(){if(!PUSH_URL||!gid||!game||game.practice||isRounds())return;pushCall('/notify').catch(e=>console.warn('alert',e))}
 async function alertsEnable(){
   if(isIOS&&!isStandalone()){ui.alertMsg='On iPhone: tap the Share button, then “Add to Home Screen”. Open Better Me from your Home Screen, then turn alerts on there.';return}
   if(!alertsSupported()){ui.alertMsg='This browser can’t show alerts. Try Chrome, or add Better Me to your Home Screen.';return}
@@ -505,7 +520,7 @@ function alertsRow(){
   if(!PUSH_URL||!game||game.practice||!game.players.includes(me)||game.status==='over'||game.players.filter(p=>!isBot(p)).length<2)return '';
   const on=alertsOn();const m=ui.alertMsg?`<div class="small" style="margin-top:4px">${esc(ui.alertMsg)}</div>`:'';
   return `<div class="alertrow small">${on?`🔔 Turn alerts are on <button class="link" data-act="alertsoff">Turn off</button>`
-    :`🔔 Want a heads-up when it’s your turn? <button class="small" data-act="alertson">Turn on alerts</button>`}${m}</div>`;
+    :`🔔 ${game.mode==='rounds'?'Want a heads-up when friends play and when a new round starts?':'Want a heads-up when it’s your turn?'} <button class="small" data-act="alertson">Turn on alerts</button>`}${m}</div>`;
 }
 
 /* ---------- voice answers (Dan's friend's idea, 2026-11-14) ----------
@@ -845,7 +860,7 @@ function defaultGameName(){
 async function newGame(){
   const id=newId();
   const name=((($('#newname')||{}).value)||'').trim().slice(0,60)||defaultGameName();
-  await fs.collection('games').doc(id).set({name,status:'lobby',players:[me],names:{[me]:myName},host:me,target:2,turn:0,pending:null,saved:{},firsts:{},winner:null,createdAt:Date.now(),lastMoveAt:Date.now()});
+  await fs.collection('games').doc(id).set({name,mode:'rounds',status:'lobby',players:[me],names:{[me]:myName},host:me,target:2,turn:0,pending:null,saved:{},firsts:{},winner:null,createdAt:Date.now(),lastMoveAt:Date.now()});
   openGame(id);
 }
 /* ---------- practice mode: computer players (simple scripts in the host's browser, no AI, no cost) ----------
@@ -899,7 +914,8 @@ async function joinGame(){
 async function startGame(target){
   if(game.host!==me)return;
   const order=game.players.slice();for(let i=order.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[order[i],order[j]]=[order[j],order[i]]}
-  await G().update({status:'playing',players:order,target,turn:0,lastMoveAt:Date.now()});
+  await G().update(Object.assign({status:'playing',players:order,target,turn:0,lastMoveAt:Date.now()},game.mode==='rounds'?{round:1,roundStartedAt:Date.now(),roundDone:{},pendings:{},lastCall:null}:{}));
+  if(game.mode==='rounds')pingRound('round');
 }
 async function removePlayer(id){
   if(game.host!==me||id===me||!game.players.includes(id))return;
@@ -957,36 +973,92 @@ function reel(result){
 }
 let spinning=false;
 async function spin(){
-  if(!myTurn()||game.pending||spinning)return;
+  if(!myTurn()||myPend()||spinning)return;
   const r=spinResult();spinning=true;
   try{await reel(r)}finally{spinning=false}
-  if(r==='FF')return G().update({pending:{ff:true,idx:pickIdx('FF')}});
-  if(r==='HH')return G().update({pending:{choose:true,why:'hh'}});
-  if(scores()[me][r]>=game.target)await G().update({pending:{choose:true,why:'wild',from:r}});
-  else await G().update({pending:{cat:r,idx:pickIdx(r)}});
+  if(r==='FF')return G().update(pset({ff:true,idx:pickIdx('FF')}));
+  if(r==='HH')return G().update(pset({choose:true,why:'hh'}));
+  if(scores()[me][r]>=game.target)await G().update(pset({choose:true,why:'wild',from:r}));
+  else await G().update(pset({cat:r,idx:pickIdx(r)}));
 }
 async function choose(cat){
-  const p=game.pending;if(!myTurn()||!p||!p.choose)return;
-  await G().update({pending:Object.assign({cat,idx:pickIdx(cat)},p.why==='hh'?{hh:true}:{})});
+  const p=myPend();if(!myTurn()||!p||!p.choose)return;
+  await G().update(pset(Object.assign({cat,idx:pickIdx(cat)},p.why==='hh'?{hh:true}:{})));
 }
 async function playSaved(i){
-  if(!myTurn()||game.pending)return;
+  if(!myTurn()||myPend())return;
   const mine=((game.saved||{})[me]||[]).slice();const c=mine.splice(i,1)[0];if(!c)return;
-  if(c.gift)return G().update({pending:{choose:true,why:'gift',from:c.from||null},['saved.'+me]:mine});
-  await G().update({pending:{cat:c.cat,idx:c.idx,fromSaved:true},['saved.'+me]:mine});
+  if(c.gift)return G().update(Object.assign(pset({choose:true,why:'gift',from:c.from||null}),{['saved.'+me]:mine}));
+  await G().update(Object.assign(pset({cat:c.cat,idx:c.idx,fromSaved:true}),{['saved.'+me]:mine}));
 }
 /* Fall Forward: read the card, share a setback that made you stronger, take 1 point in any category you pick. */
 async function postFF(cat){
-  const p=game.pending;if(!myTurn()||!p||!p.ff||!KEYS.includes(cat))return;
+  const p=myPend();if(!myTurn()||!p||!p.ff||!KEYS.includes(cat))return;
   const post={by:me,cat,card:'FF',idx:p.idx,text:((($('#ans')||{}).value)||'').trim().slice(0,4000),pts:1,kind:'turn',at:Date.now()};
   const fv=takeVoice('ans');if(fv)post.voice=fv;const fp=takePhotos('ans');if(fp)post.photos=fp;
   await POSTS().add(post);clearVoice('ans');
   tipsTurnDone();
-  const r=checkEnd(posts.concat(post));
-  if(r.winners.length)await G().update({status:'over',winner:r.winners[0],pending:null,lastMoveAt:Date.now()});
-  else await G().update(nextTurnPatch());
+  await endTurn({},post);
 }
 function nextTurnPatch(){return {turn:(game.turn+1)%game.players.length,pending:null,lastMoveAt:Date.now()}}
+/* Ends my turn. Classic games: pass the turn on (or finish if someone just won). Rounds: mark me done for this round. */
+async function endTurn(extra,post){
+  if(isRounds()){await roundsFinish(extra);return}
+  if(post){const r=checkEnd(posts.concat(post));if(r.winners.length){await G().update({status:'over',winner:r.winners[0],pending:null,lastMoveAt:Date.now()});return}}
+  await G().update(Object.assign({},extra,nextTurnPatch()));
+}
+/* ---------- rounds engine ----------
+   roundsFinish: in one safe step (a transaction, so two players finishing together can't confuse it) mark a player done.
+   When only one player is left, remember when (lastCall) so the 12-hour clock can start.
+   roundsCheck/roundsAdvance: once everyone is done (or the clock ran out), ONE browser starts the next round, or ends the game
+   if somebody has all 5 categories filled. The game only ends at the end of a round, so everyone has had the same number of cards. */
+async function roundsFinish(extra,who){
+  who=who||me;
+  const out=await fs.runTransaction(async tx=>{
+    const s=await tx.get(G());if(!s.exists)return null;const g=s.data();
+    if(g.status!=='playing')return null;
+    const rd=g.round||1,done=g.roundDone||{};
+    if(done[who]===rd)return null;
+    const patch=Object.assign({},extra||{},{['pendings.'+who]:null,['roundDone.'+who]:rd,lastMoveAt:Date.now()});
+    const left=g.players.filter(p=>p!==who&&done[p]!==rd&&!isBot(p));
+    if(left.length===1&&!(g.lastCall&&g.lastCall.round===rd))patch.lastCall={round:rd,at:Date.now(),who:left[0]};
+    tx.update(G(),patch);return {rd,left:left.length};
+  });
+  if(out&&who===me)pingRound('card');
+}
+let advTimer=null,advBusy=false;
+function roundsCheck(){
+  if(!isRounds()||game.status!=='playing'||!game.players.includes(me)||advBusy||advTimer)return;
+  const rd=roundNo(),left=game.players.filter(p=>!isDone(p)),lc=game.lastCall;
+  const expired=!!(lc&&lc.round===rd&&Date.now()>=lc.at+ROUND_WAIT_MS&&lc.who!==me);
+  if(left.length&&!expired)return;
+  advTimer=setTimeout(()=>{advTimer=null;roundsAdvance().catch(e=>console.warn('advance',e))},600+Math.random()*1800);
+}
+async function roundsAdvance(){
+  if(advBusy||!isRounds()||game.status!=='playing')return;
+  advBusy=true;
+  try{
+    const rd=roundNo();
+    const fresh=(await POSTS().get()).docs.map(d=>Object.assign({id:d.id},d.data()));
+    const r=checkEnd(fresh);
+    const res=await fs.runTransaction(async tx=>{
+      const s=await tx.get(G());if(!s.exists)return null;const g=s.data();
+      if(g.status!=='playing'||(g.round||1)!==rd)return null;
+      const done=g.roundDone||{},left=g.players.filter(p=>done[p]!==rd),lc=g.lastCall;
+      const expired=!!(lc&&lc.round===rd&&Date.now()>=lc.at+ROUND_WAIT_MS&&lc.who!==me);
+      if(left.length&&!expired)return null;
+      const winners=g.players.filter(p=>r.winners.includes(p));
+      const patch={lastMoveAt:Date.now(),lastCall:null};
+      if(winners.length)Object.assign(patch,{status:'over',winner:winners[0],winners});
+      else Object.assign(patch,{round:rd+1,roundStartedAt:Date.now()});
+      tx.update(G(),patch);return {over:winners.length>0};
+    });
+    if(res&&!res.over)pingRound('round');
+  }finally{advBusy=false}
+}
+setInterval(()=>{if(!document.hidden)roundsCheck()},60000);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)roundsCheck()});
+function pingRound(kind){if(!PUSH_URL||!gid||!game||game.practice)return;pushCall('/roundnotify',{kind}).catch(e=>console.warn('roundping',e))}
 function checkEnd(list){
   const sc=scores(list);const firsts=Object.assign({},game.firsts||{});const newly=[];
   game.players.forEach(p=>KEYS.forEach(k=>{if(sc[p][k]>=game.target&&!firsts[k]){firsts[k]=p;newly.push({p,k})}}));
@@ -1033,7 +1105,7 @@ function syncPts(p){
   ui.pts=ptsFrom(lim,ui.optShare,ui.optOther,ui.commitOpen);
 }
 async function postAnswer(){
-  const p=game.pending;if(!myTurn()||!p||p.choose)return;
+  const p=myPend();if(!myTurn()||!p||p.choose)return;
   syncPts(p);
   const post={by:me,cat:p.cat,idx:p.idx,text:((($('#ans')||{}).value)||'').trim().slice(0,4000),pts:ui.pts,kind:'turn',at:Date.now()};
   const c=readCommit();if(c===false)return;if(c){const cv=takeVoice('c_text');if(cv)c.voice=cv;const cp=takePhotos('c_text');if(cp)c.photos=cp;post.commit=c}
@@ -1043,22 +1115,23 @@ async function postAnswer(){
   if(p.hh){const to=($('#hh_to')||{}).value;if(to&&game.players.includes(to)&&to!==me){gift=to;post.helped=to}}
   await POSTS().add(post);clearVoice('ans','c_text');
   tipsTurnDone();
-  const r=checkEnd(posts.concat(post));
   const extra=gift?{['saved.'+gift]:((game.saved||{})[gift]||[]).concat({gift:true,from:me})}:{};
-  if(r.winners.length)await G().update({status:'over',winner:r.winners[0],pending:null,lastMoveAt:Date.now()});
-  else await G().update(Object.assign(extra,nextTurnPatch()));
+  if(isRounds())await endTurn(extra,post);
+  else{const r=checkEnd(posts.concat(post));
+    if(r.winners.length)await G().update({status:'over',winner:r.winners[0],pending:null,lastMoveAt:Date.now()});
+    else await G().update(Object.assign(extra,nextTurnPatch()))}
   ui.pts=1;ui.ptsFor=null;ui.commitOpen=false;
 }
 async function passCard(){
-  const p=game.pending;if(!myTurn()||!p||p.choose)return;
+  const p=myPend();if(!myTurn()||!p||p.choose)return;
   await POSTS().add(Object.assign({by:me,cat:p.ff?null:p.cat,idx:p.idx,text:'',pts:0,kind:'pass',at:Date.now()},p.ff?{card:'FF'}:{}));
-  await G().update(nextTurnPatch());
+  await endTurn({},null);
 }
 async function saveCard(){
-  const p=game.pending;if(!myTurn()||!p||p.choose)return;
+  const p=myPend();if(!myTurn()||!p||p.choose)return;
   const mine=((game.saved||{})[me]||[]).concat({cat:p.cat,idx:p.idx});
   await POSTS().add({by:me,cat:p.cat,idx:null,text:'',pts:0,kind:'saved',at:Date.now()});
-  await G().update(Object.assign({['saved.'+me]:mine},nextTurnPatch()));
+  await endTurn({['saved.'+me]:mine},null);
 }
 async function joinIn(parentId){
   const parent=posts.find(x=>x.id===parentId);if(!parent)return;
@@ -1068,8 +1141,8 @@ async function joinIn(parentId){
   const c=readCommit(ui.jCommit,'#jc_');if(c===false)return;if(c){const cv=takeVoice('jc_text');if(cv)c.voice=cv;const cp=takePhotos('jc_text');if(cp)c.photos=cp;post.commit=c}
   const jv=takeVoice('j_'+parentId);if(jv)post.voice=jv;const jp=takePhotos('j_'+parentId);if(jp)post.photos=jp;
   await POSTS().add(post);clearVoice('jc_text','j_'+parentId);
-  const r=checkEnd(posts.concat(post));
-  if(r.winners.length)await G().update({status:'over',winner:r.winners[0],pending:null});
+  if(!isRounds()){const r=checkEnd(posts.concat(post));
+    if(r.winners.length)await G().update({status:'over',winner:r.winners[0],pending:null})}
   ui.joinOpen=null;
 }
 async function markDone(postId){
@@ -1078,6 +1151,8 @@ async function markDone(postId){
   await POSTS().add({by:me,cat:p.cat,idx:null,text:p.commit.text,pts:0,kind:'kept',parent:postId,at:Date.now()});
 }
 async function skipTurn(){if(!game||game.host!==me||game.status!=='playing')return;await G().update(nextTurnPatch())}
+/* Rounds: the host can let a player sit this round out (they're marked done with no card). */
+async function skipRound(uid){if(!game||game.host!==me||game.status!=='playing'||!isRounds()||!game.players.includes(uid))return;await roundsFinish({},uid)}
 async function endNow(){
   if(!game||game.status!=='playing'||game.host!==me)return;
   const sc=scores();const tot=p=>KEYS.reduce((a,k)=>a+sc[p][k],0);
@@ -1087,7 +1162,7 @@ async function addSuggestion(){
   const text=(($('#s_text')||{}).value||'').trim();const topic=($('#s_topic')||{}).value||'Rules';
   if(!text){ui.msg='Write your suggestion first.';return}
   const s={by:AUTH,name:myName,text:text.slice(0,2000),topic,at:Date.now(),plus:[]};
-  const p=game&&game.pending;if(($('#s_card')||{}).checked&&p&&p.cat)Object.assign(s,{cat:p.cat,idx:p.idx});
+  const p=game&&myPend();if(($('#s_card')||{}).checked&&p&&p.cat)Object.assign(s,{cat:p.cat,idx:p.idx});
   await fs.collection('suggestions').add(s);
   const e=$('#s_text');if(e)e.value='';ui.msg='Thanks! Your suggestion is saved.';ui.suggOpen=true;
 }
@@ -1145,7 +1220,7 @@ function pickTip(){
       text:'While you wait: their answer will show up below when they post. Some cards welcome everyone, so you can tap “Join in” and earn points too.'};
     return null;
   }
-  const p=game.pending;
+  const p=myPend();
   if(!p)return basic?{id:'spin',at:'[data-act="spin"]',glow:'[data-act="spin"]',text:'Your turn! Tap Spin to find out which part of life you’ll grow in.'}:null;
   if(p.choose)return (basic||once('choose'))?{id:'choose',once:'choose',at:'.catpick',text:'Pick any category you like. A gem means you’ve already filled it, and that’s fine to pick too.'}:null;
   if(p.ff)return (basic||once('ff'))?{id:'ff',once:'ff',at:'#ans',text:'Fall Forward! Share a setback that made you stronger (type it or say it), then tap any category below to take 1 point.'}:null;
@@ -1159,7 +1234,7 @@ function pickTip(){
   if(p.hh&&$('#hh_to')&&once('hh'))return {id:'hh:'+key,once:'hh',at:'#hh_to',glow:'#hh_to',text:'Helping Hand: choose who gets a free card (any category) on their next turn.'};
   if(!basic)return null;
   if(!val('#ans')&&ui.tipAns!==key)return {id:'ans:'+key,at:'#ans',glow:'#ans',text:'Read the card, then share your answer. Type it here, or just say it out loud if you’re on a call.'};
-  return {id:'post:'+key,at:'#ptsbox',glow:'[data-act="post"]',text:`Check the points that fit you${ptsLimit(p.cat,p.idx).commit?' (a commitment earns extra)':''}, then tap “Post and end my turn”. That’s a whole turn!`};
+  return {id:'post:'+key,at:'#ptsbox',glow:'[data-act="post"]',text:`Check the points that fit you${ptsLimit(p.cat,p.idx).commit?' (a commitment earns extra)':''}, then tap “${isRounds()?'Post my card':'Post and end my turn'}”. That’s ${isRounds()?'your card for this round':'a whole turn'}!`};
 }
 function applyTip(){
   document.querySelectorAll('.tip').forEach(t=>t.remove());
@@ -1251,11 +1326,12 @@ function nameBox(){
 function statusLine(g){
   if(g.status==='lobby')return `Waiting for players (${g.players.length}/${MAXP})`;
   if(g.status==='over')return `Finished · ${esc(nm(g.winner,g))} won`;
+  if(g.mode==='rounds'){const s=seatOf(g),rd=g.round||1;return (g.roundDone||{})[s]===rd?`Round ${rd} · you’ve played. Waiting for the others`:`<b style="color:var(--fg)">Round ${rd} · your card is waiting!</b>`}
   const cur=g.players[g.turn%g.players.length];
   return cur===seatOf(g)?'<b style="color:var(--fg)">Your turn!</b>':`Waiting for ${esc(nm(cur,g))}`;
 }
 function home(){
-  const rank=g=>g.status==='playing'&&g.players[g.turn%g.players.length]===seatOf(g)?0:g.status==='over'?2:1;
+  const rank=g=>g.status==='playing'&&(g.mode==='rounds'?g.players.includes(seatOf(g))&&(g.roundDone||{})[seatOf(g)]!==(g.round||1):g.players[g.turn%g.players.length]===seatOf(g))?0:g.status==='over'?2:1;
   const hs=hiddenSet();
   const mine=myGames.slice().sort((a,b)=>rank(a)-rank(b)||(b.lastMoveAt||0)-(a.lastMoveAt||0));
   const hid=mine.filter(g=>hs.has(g.id)),vis=mine.filter(g=>!hs.has(g.id));
@@ -1279,6 +1355,7 @@ function lobby(){
   const inGame=game.players.includes(me);const link=SITE_URL+'#'+gid;
   return `<section class="panel"><h2>Waiting for players</h2>
   <p class="muted">Send this link to your friends. They tap it, type their name, and tap "Join". 2 to ${MAXP} players.</p>
+  ${game.mode==='rounds'?`<p class="small muted">🔄 This game is played in <b>rounds</b>: everyone plays one card per round, in any order, whenever they like. The next round starts when everyone has played.</p>`:''}
   <div class="row"><input id="roomlink" readonly value="${esc(link)}" style="flex:1;min-width:200px"><button class="primary small" data-act="share">Share invite</button><button class="small" data-act="copylink">Copy link</button></div>
   <p class="small muted">🔒 Heads-up: anyone with this link can open the game and read what everyone posts, even after it starts. Share it only with people you’d be happy to have read along, and post only what you’re comfortable with them seeing.</p>
   <div class="players">${game.players.map(p=>`<div class="pl"><div class="spread"><div class="who"><span>${esc(nm(p))}</span>${p===game.host?'<span class="tag">Host</span>':''}</div>${game.host===me&&p!==me?`<button class="small" data-act="remove" data-arg="${esc(p)}">Remove</button>`:''}</div></div>`).join('')}</div>
@@ -1287,17 +1364,41 @@ function lobby(){
   <button class="primary" data-act="start" ${game.players.length<2?'disabled':''}>Start the game</button>`:(inGame?'<span class="muted">The host starts the game when everyone’s in.</span>':'')}</div>
   ${game.host===me&&game.players.length<2?'<p class="small muted">You need at least one more player to start.</p>':''}${dupNote()}</section>`;
 }
+/* Play again (Dan, 2026-11-15): one player makes a new game; everyone else sees a "Join the new game" button here. */
+async function playAgain(){
+  if(!game||game.status!=='over'||game.rematch||!game.players.includes(me))return;
+  const id=newId();
+  await fs.collection('games').doc(id).set({name:defaultGameName(),mode:'rounds',status:'lobby',players:[me],names:{[me]:myName},host:me,target:game.target||2,turn:0,pending:null,saved:{},firsts:{},winner:null,createdAt:Date.now(),lastMoveAt:Date.now(),from:gid});
+  await G().update({rematch:id,rematchBy:me});
+  openGame(id);
+}
+function autoJoinNext(){
+  if(!ui.autoJoin||!game||game.id!==ui.autoJoin||game.status!=='lobby'||game.players.includes(me)||!myName)return;
+  ui.autoJoin=null;joinGame().catch(e=>console.warn('autojoin',e));
+}
+function rematchBox(){
+  if(!game.players.includes(me)||game.practice)return '';
+  if(game.rematch){const by=game.rematchBy===me;
+    return `<div class="note" style="margin-top:10px">🎲 ${by?'You started':esc(nameOf(game.rematchBy))+' started'} a new game with the same people.
+      <div class="row" style="margin-top:6px"><button class="primary" data-act="${by?'open':'joinnext'}" data-arg="${esc(game.rematch)}">${by?'Open the new game':'Join the new game'}</button></div></div>`}
+  return `<div class="row" style="margin-top:10px"><button class="primary" data-act="playagain">Play again with the same people</button></div>
+    <p class="small muted">Starts a new game and gives your friends a button to join it.</p>`;
+}
 function winnerBox(){
+  const ws=(game.winners&&game.winners.length>1)?game.winners:null;
+  const head=ws?(ws.includes(me)?'It’s a tie, and you’re one of the winners!':'It’s a tie: '+ws.map(w=>esc(nameOf(w))).join(' and ')+' win!'):(game.winner===me?'You win!':esc(nameOf(game.winner))+' wins!');
+  const sub=ws?'Everyone give the winners a sincere compliment.':(game.winner===me?'Soak it in while everyone gives you a sincere compliment.':`Everyone give ${esc(nameOf(game.winner))} a sincere compliment.`);
   return `<section class="panel"><div class="winner" style="margin:0"><span class="trophy" aria-hidden="true">🏆</span><div>
-    <h2>${game.winner===me?'You win!':esc(nameOf(game.winner))+' wins!'}</h2>
-    <p>${game.winner===me?'Soak it in while everyone gives you a sincere compliment.':`Everyone give ${esc(nameOf(game.winner))} a sincere compliment.`} Then keep your game sheet, right below.</p></div></div>
-    <p class="small muted" style="margin:8px 0 0">${esc(game.name||'Game')}</p></section>`;
+    <h2>${head}</h2>
+    <p>${sub} Then keep your game sheet, right below.</p></div></div>
+    <p class="small muted" style="margin:8px 0 0">${esc(game.name||'Game')}</p>${rematchBox()}</section>`;
 }
 function scoreboard(){
   const sc=scores();const cur=curPlayer();
   const head=game.status==='over'?`<h2>Final scores</h2>`:`<h2>Race to <span class="num">${game.target}</span> point${game.target===1?'':'s'} in every category</h2>`;
-  return `<section class="panel">${head}<div class="players">${game.players.map(p=>{const s=sc[p];const up=p===cur&&game.status==='playing';
-    return `<div class="pl ${up?'cur':''}"><div class="spread"><div class="who"><span>${esc(nm(p))}</span>${isBot(p)?'<span class="small muted">(computer)</span>':''}</div>${up?'<span class="tag">Up now</span>':''}</div>
+  const rds=isRounds()&&game.status==='playing';
+  return `<section class="panel">${head}<div class="players">${game.players.map(p=>{const s=sc[p];const up=!isRounds()&&p===cur&&game.status==='playing';
+    return `<div class="pl ${up?'cur':''}"><div class="spread"><div class="who"><span>${esc(nm(p))}</span>${isBot(p)?'<span class="small muted">(computer)</span>':''}</div>${up?'<span class="tag">Up now</span>':rds?(isDone(p)?'<span class="tag">✓ Played</span>':'<span class="small muted">to play</span>'):''}</div>
     <div class="cats">${KEYS.map(k=>`<span class="cat" style="color:${col(k)}" title="${CATS[k].name}: ${s[k]} of ${game.target}"><span>${CATS[k].name}</span>${s[k]>=game.target?`<span class="gem" style="--c:${col(k)}" aria-label="fulfilled"></span>`:`<span class="pips">${Array.from({length:game.target},(_,i)=>`<span class="pip ${s[k]>i?'on':''}"></span>`).join('')}</span>`}</span>`).join('')}</div>
     <div class="fulfilled">${fulfilledCount(s)} of 5 fulfilled</div></div>`}).join('')}</div></section>`;
 }
@@ -1306,10 +1407,26 @@ function cardBox(cat,idx,extra){
   return `<div class="card spin"><div class="stripe" style="background:${col(cat)}"><span>${CATS[cat].name}</span>${extra||''}</div><div class="text">${esc(t)}</div></div>
   ${APART.test(t)?`<div class="note small">Playing apart? Do this on your own and post what you got. Others can join in from the card below.</div>`:''}`;
 }
+/* Rounds: "Round 3: 2 of 4 have played", plus the 12-hour note once only one player is left. */
+function roundHead(){
+  const rd=roundNo(),hum=game.players.filter(p=>!isBot(p)),nd=hum.filter(isDone).length;
+  const lc=game.lastCall&&game.lastCall.round===rd?game.lastCall:null;let extra='';
+  if(lc){const h=Math.max(1,Math.ceil((lc.at+ROUND_WAIT_MS-Date.now())/3600000));
+    extra=lc.who===me?` Everyone else has played. You have about ${h} hour${h===1?'':'s'} left to play before round ${rd+1} starts without you.`
+      :` ${esc(nameOf(lc.who))} is the last one. If they haven’t played in about ${h} hour${h===1?'':'s'}, round ${rd+1} starts anyway.`}
+  return `<p class="small muted"><b>Round ${rd}</b> · ${nd} of ${hum.length} have played.${extra}</p>`;
+}
+function roundWait(){
+  const left=leftThisRound(),rd=roundNo(),names=left.map(p=>esc(nameOf(p))).join(', ');
+  return `<section class="panel" id="waitbox"><h2>You’ve played round ${rd} 🎉</h2>${roundHead()}
+  <p class="muted">${left.length?`Still to play: <b>${names}</b>. Meanwhile, read what everyone posted below, react with an emoji, and tap “Join in” on cards that welcome you. Round ${rd+1} starts when everyone has played.`:'Starting the next round…'}</p>
+  ${left.length?`<div class="row"><button data-act="nudge">Copy a reminder message</button></div><p class="small muted">Paste it to ${names} in WhatsApp, Messenger, LINE or a text.</p>`:''}</section>`;
+}
 function turnPanel(){
   if(game.status==='over')return `<section class="panel"><h2>Game over</h2><p class="muted">Keep checking off your commitments below. Start a new game any time from "My games".</p></section>`;
   const cur=curPlayer();
-  if(!game.players.includes(me))return `<section class="panel"><h2>${esc(nm(cur))} is up</h2><p class="muted">This game already started, so you’re watching. To play, use “Ask to join” at the top.</p></section>`;
+  if(!game.players.includes(me))return `<section class="panel"><h2>${isRounds()?'Round '+roundNo()+' is on':esc(nm(cur))+' is up'}</h2><p class="muted">This game already started, so you’re watching. To play, use “Ask to join” at the top.</p></section>`;
+  if(isRounds()&&!myTurn())return roundWait();
   if(!myTurn()&&isBot(cur))return `<section class="panel" id="waitbox"><h2>${esc(nm(cur))} is taking a turn…</h2><p class="muted">Computer players move by themselves in a couple of seconds.</p></section>`;
   if(!myTurn()){
     const days=game.lastMoveAt?Math.max(0,Math.floor((Date.now()-game.lastMoveAt)/86400000)):0;
@@ -1318,9 +1435,9 @@ function turnPanel(){
     <div class="row"><button data-act="nudge">Copy a "your turn" message</button></div>
     <p class="small muted">Paste it to ${esc(nameOf(cur))} in WhatsApp, Messenger, LINE or a text.</p></section>`;
   }
-  const p=game.pending;const saved=(game.saved||{})[me]||[];
+  const p=myPend();const saved=(game.saved||{})[me]||[];
   if(!p){
-    return `<section class="panel"><h2>Your turn</h2><p class="muted">Spin to get a category. Answer the card, take your points, and the turn passes on.</p>
+    return `<section class="panel"><h2>${isRounds()?'Round '+roundNo()+': your card':'Your turn'}</h2>${isRounds()?roundHead():''}<p class="muted">${isRounds()?'Play whenever you like. Spin to get a category, answer the card and take your points. That’s your card for this round.':'Spin to get a category. Answer the card, take your points, and the turn passes on.'}</p>
     <div class="row"><button class="primary big" data-act="spin">Spin</button></div>
     ${saved.length?`<div class="field"><label>Or play a card you saved</label><div class="row">${saved.map((c,i)=>c.gift?`<button class="small" data-act="playsaved" data-arg="${i}" style="border-color:var(--HH)">Helping Hand from ${esc(nameOf(c.from))} (any category)</button>`:`<button class="small" data-act="playsaved" data-arg="${i}" style="border-color:${col(c.cat)}">${CATS[c.cat].name} card</button>`).join('')}</div></div>`:''}</section>`;
   }
@@ -1364,7 +1481,7 @@ function turnPanel(){
     <div class="field" style="flex:1;min-width:160px"><label for="c_due">Check-in date (needed)</label><input type="date" id="c_due" required min="${new Date().toISOString().slice(0,10)}"></div></div>
   </div>
   ${p.hh&&others().length?`<div class="field note"><label for="hh_to">Helping Hand: who gets a free card (any category) on their next turn?</label><select id="hh_to">${others().map(o=>`<option value="${esc(o)}">${esc(nm(o))}</option>`).join('')}</select></div>`:''}
-  <div class="row"><button class="primary" data-act="post">Post and end my turn</button><button data-act="save">Save for later</button><button data-act="pass">Pass</button></div>
+  <div class="row"><button class="primary" data-act="post">${isRounds()?'Post my card':'Post and end my turn'}</button><button data-act="save">Save for later</button><button data-act="pass">Pass</button></div>
   <p class="small muted">No pressure: passing or saving a card is always fine.</p></section>`;
 }
 /* ---------- game sheet: my commitments, the ones I'm partner for, everyone else's ---------- */
@@ -1480,6 +1597,19 @@ function joinPanel(p){
   </div>
   <div class="row"><button class="primary small" data-act="joinpost" data-arg="${p.id}">Post</button><button class="small" data-act="joinclose">Cancel</button></div>`;
 }
+/* Quick emoji reactions (Dan, 2026-11-15): one tap, several allowed per person, tap again to take it back. Stored on the post as react.<player> = [emoji...]. */
+const EMOJIS=['👍','❤️','👏','🎉','👌','⭐','😂'];
+function reactRow(p){
+  if(!game.players.includes(me))return '';
+  const r=p.react||{};
+  return `<div class="reacts">${EMOJIS.map(e=>{const who=Object.keys(r).filter(u=>(r[u]||[]).includes(e)),on=who.includes(me);
+    return `<button class="react ${on?'on':''}" data-act="react" data-arg="${p.id}|${e}" aria-pressed="${on}" title="${esc(who.length?who.map(u=>nm(u)).join(', '):'React')}">${e}${who.length?` <span>${who.length}</span>`:''}</button>`}).join('')}</div>`;
+}
+async function toggleReact(arg){
+  const [id,e]=arg.split('|');const p=posts.find(x=>x.id===id);if(!p||!EMOJIS.includes(e)||!game.players.includes(me))return;
+  const has=((p.react||{})[me]||[]).includes(e);
+  await POSTS().doc(id).update({['react.'+me]:has?FVx().arrayRemove(e):FVx().arrayUnion(e)});
+}
 function postLine(p){
   const when=new Date(p.at).toLocaleDateString(undefined,{month:'short',day:'numeric'});
   const chip=(p.card==='FF'?`<span class="chip" style="background:var(--FF)">Fall Forward</span> `:'')+(p.cat?`<span class="chip" style="background:${col(p.cat)}">${CATS[p.cat].name}</span>`:'')
@@ -1493,7 +1623,8 @@ function postLine(p){
   <details class="qline"><summary class="small" style="font-family:var(--body);font-weight:500">The card</summary>${esc(t)}</details>
   ${p.text||p.voice?`<div class="answer">${esc(p.text)}${voiceTag(p.voice,nm(p.by))}</div>`:''}${photoTag(p.photos,nm(p.by))}
   ${p.commit?`<div class="small muted">Committed: ${esc(p.commit.text)}${voiceTag(p.commit.voice,nm(p.by))}</div>${photoTag(p.commit.photos,nm(p.by))}`:''}
-  ${reps.length?`<div class="replies">${reps.map(r=>`<div class="reply"><div class="meta"><b>${esc(nm(r.by))}</b> joined in <span>+${r.pts}</span></div>${r.text||r.voice?`<div class="answer">${esc(r.text)}${voiceTag(r.voice,nm(r.by))}</div>`:''}${photoTag(r.photos,nm(r.by))}${r.commit?`<div class="small muted">Committed: ${esc(r.commit.text)}${voiceTag(r.commit.voice,nm(r.by))}</div>${photoTag(r.commit.photos,nm(r.by))}`:''}</div>`).join('')}</div>`:''}
+  ${reps.length?`<div class="replies">${reps.map(r=>`<div class="reply"><div class="meta"><b>${esc(nm(r.by))}</b> joined in <span>+${r.pts}</span></div>${r.text||r.voice?`<div class="answer">${esc(r.text)}${voiceTag(r.voice,nm(r.by))}</div>`:''}${photoTag(r.photos,nm(r.by))}${r.commit?`<div class="small muted">Committed: ${esc(r.commit.text)}${voiceTag(r.commit.voice,nm(r.by))}</div>${photoTag(r.commit.photos,nm(r.by))}`:''}${reactRow(r)}</div>`).join('')}</div>`:''}
+  ${reactRow(p)}
   ${canJoin?(ui.joinOpen===p.id?joinPanel(p)
     :`<div class="row"><button class="small" data-act="joinopen" data-arg="${p.id}">Join in on this card</button></div>`):''}</div>`;
 }
@@ -1502,7 +1633,7 @@ function feed(){
   return `<section class="panel"><h2>The story so far</h2>${top.length?`<div class="feed">${top.map(postLine).join('')}</div>`:'<p class="muted">No turns yet. The first answers will show up here.</p>'}</section>`;
 }
 function suggestBox(){
-  const p=game&&game.pending&&game.pending.cat&&myTurn()?game.pending:null;
+  const p=game&&myPend()&&myPend().cat&&myTurn()?myPend():null;
   const list=sugg.slice().sort((a,b)=>((b.plus||[]).length-(a.plus||[]).length)||(b.at-a.at));
   return `<section class="panel"><details ${ui.suggOpen?'open':''} id="suggdet"><summary>Suggest an improvement</summary>
   <p class="small muted" style="margin:.4em 0">Ideas for the rules, a card, or this app. Everyone can see suggestions and tap "Me too" on ones they agree with.</p>
@@ -1521,8 +1652,8 @@ function rulesBox(){
   return `<section class="panel"><details ${!game||game.status==='lobby'?'open':''}><summary>How to play</summary>
   <ol><li><b>Spin</b> to get a category: Heart, Mind, Body, People or Tangibles. Already fulfilled it? Then it’s wild: pick any.</li>
   <li><b>Answer the card</b> in writing (or with your phone’s mic key).</li>
-  <li><b>Take the points</b> the card says. The turn passes to the next player.</li></ol>
-  <ul><li>Fill all 5 categories to the target (1, 2 or 3 points, the host picks) to win. Extra points in a full category don’t count.</li>
+  <li><b>Take the points</b> the card says. ${game&&game.mode==='rounds'?'That’s your card for the round.':'The turn passes to the next player.'}</li></ol>
+  <ul>${game&&game.mode==='rounds'?`<li><b>Rounds:</b> everyone plays one card per round, in any order, whenever it suits them. The next round starts when everyone has played. If only one player is left, they have 12 hours, then the next round starts without them.</li>`:''}<li>Fill all 5 categories to the target (1, 2 or 3 points, the host picks) to win. Extra points in a full category don’t count.${game&&game.mode==='rounds'?' The game ends at the end of a round, so everyone gets the same number of cards. If two players finish together, it’s a tie.':''}</li>
   <li><b>Fall Forward</b> (rare): read a card about setbacks, share one that made you stronger, and take 1 point in any category.</li>
   <li><b>Helping Hand</b> (rare): pick any category for your card, then give another player a free card of any category for their next turn.</li>
   <li>Tap ♡ on any card that helped you. Hearts show which cards people love, and your hearted cards always stay in your deck.</li>
@@ -1539,7 +1670,7 @@ function hostBox(){
   const rm=others.map(p=>{const ask=ui.rmAsk===p;const d=game.players.filter(q=>nameOf(q)===nameOf(p));const c=posts.filter(x=>x.by===p).length;const n=d.length>1?` (${c} post${c===1?'':'s'}${p===curPlayer()?', up now':''})`:'';
     return `<button class="small" data-act="remove" data-arg="${esc(p)}">${ask?'Tap again to remove '+esc(nameOf(p))+n:'Remove '+esc(nameOf(p))+n}</button>`}).join('');
   return `${dupNote()}<section class="panel"><details ${dup||ui.rmAsk?'open':''}><summary>Host tools</summary><div class="row" style="margin-top:8px">
-  <button class="small" data-act="skip">Skip ${esc(nameOf(curPlayer()))}’s turn</button>
+  ${isRounds()?leftThisRound().filter(p=>p!==me).map(p=>`<button class="small" data-act="skiprd" data-arg="${esc(p)}">Skip ${esc(nameOf(p))} this round</button>`).join(''):`<button class="small" data-act="skip">Skip ${esc(nameOf(curPlayer()))}’s turn</button>`}
   <button class="small" data-act="endnow">End the game now (most points wins)</button></div>
   ${rm?`<p class="small muted" style="margin:10px 0 4px">Remove a player (left the game, or joined twice by mistake). Their posts stay; turns skip them from now on.</p><div class="row">${rm}</div>`:''}
   <p class="small muted">Use these only when everyone agrees.</p></details></section>`;
@@ -1573,6 +1704,11 @@ document.addEventListener('click',e=>{
   if(a==='share'){const text=`Join me for a game of Better Me! It’s a friendly, free game where we take turns answering cards about Heart, Mind, Body, People and Tangibles, and cheer each other on. No app or sign-up: tap the link and type your first name. (${game.name||'Better Me'})`;
     if(navigator.share){navigator.share({title:'Better Me game',text,url:SITE_URL+'#'+gid}).catch(()=>{})}
     else copyText(text+' '+SITE_URL+'#'+gid,'Invite copied. Paste it into WhatsApp, Messenger, LINE or a text.','roomlink');return}
+  if(a==='react'){toggleReact(arg).catch(e=>{console.warn('react',e);ui.msg='That reaction didn’t save. Try again in a moment.';render()});return}
+  if(a==='playagain'){act(playAgain);return}
+  if(a==='joinnext'){ui.autoJoin=arg;openGame(arg);return}
+  if(a==='skiprd'){act(()=>skipRound(arg));return}
+  if(a==='nudge'&&isRounds()){const nms=leftThisRound().map(p=>nameOf(p)).join(' and ');copyText(`Hi ${nms}! Round ${roundNo()} of Better Me (${game.name||'our game'}) is waiting for your card: ${SITE_URL}#${gid}`,'Copied. Paste it into WhatsApp, Messenger, LINE or a text.','');return}
   if(a==='nudge'){copyText(`${nameOf(curPlayer())}, it’s your turn in Better Me (${game.name||'our game'})! ${SITE_URL}#${gid} (If it asks, tap “I’m ${nameOf(curPlayer())}”.)`,'Copied. Paste it into WhatsApp, Messenger, LINE or a text.','');return}
   if(a==='hide'||a==='unhide'){const s=hiddenSet();if(a==='hide')s.add(arg);else s.delete(arg);lsSet('bm_hidden',JSON.stringify([...s]));render();return}
   if(a==='rename'){ui.renaming=true;render();setTimeout(()=>{const i=$('#gname');if(i){i.focus();i.select()}},0);return}
