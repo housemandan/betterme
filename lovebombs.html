@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Love Bombs - Kindness Cards</title>
+<meta name="description" content="Free kindness cards. Draw a Love Bomb, then tell someone what you appreciate about them. Share it in person or send it to a friend.">
+<meta property="og:title" content="Love Bombs - Kindness Cards">
+<meta property="og:description" content="Free kindness cards. Make someone feel appreciated today.">
+<meta property="og:image" content="https://bettermegame.com/logo.png">
+<meta property="og:type" content="website">
+<link rel="icon" href="favicon.ico" sizes="any">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<style>
+:root{--orange:#e8965a;--pink:#c2378a;--green:#4a9a4f;--indigo:#5a63b0;--ink:#2b2b3a;--soft:#f7f3ee}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%}
+body{font-family:"Avenir Next","Century Gothic","Segoe UI",Roboto,sans-serif;font-weight:300;color:var(--ink);background:var(--soft);line-height:1.5}
+button{font:inherit;cursor:pointer;border:0;background:none;color:inherit}
+.hide{display:none!important}
+/* watercolor backdrop like the box */
+.wash{background:
+ radial-gradient(60% 50% at 5% 5%,#5b66b3 0,transparent 70%),
+ radial-gradient(55% 60% at 8% 80%,#4f9c4f 0,transparent 70%),
+ radial-gradient(60% 70% at 50% 30%,#e6a066 0,transparent 75%),
+ radial-gradient(55% 60% at 100% 55%,#c2378a 0,transparent 70%),
+ radial-gradient(50% 50% at 70% 100%,#b8457f 0,transparent 70%),#d98a60}
+.wrap{max-width:560px;margin:0 auto;padding:0 18px}
+/* HOME */
+#home{min-height:100%;padding-bottom:40px}
+.hero{color:#fff;text-align:center;padding:calc(36px + env(safe-area-inset-top)) 16px 34px}
+.logo{font-size:min(26vw,120px);font-weight:200;letter-spacing:-.02em;line-height:1}
+.tag{letter-spacing:.28em;font-size:.82rem;font-weight:400;margin-top:8px}
+.panel{background:#fff;border-radius:22px;padding:18px;margin-top:-6px;box-shadow:0 10px 30px rgba(60,30,60,.18)}
+.panel h2{font-size:.78rem;letter-spacing:.14em;text-transform:uppercase;font-weight:600;color:#8a7f95;margin:6px 0 10px}
+.decks{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.deck{border-radius:16px;padding:14px 12px;color:#fff;text-align:left;min-height:92px;position:relative;border:3px solid transparent;transition:transform .15s}
+.deck b{display:block;font-weight:600;font-size:1.02rem;line-height:1.2}
+.deck small{display:block;opacity:.92;font-size:.78rem;margin-top:4px;font-weight:400}
+.deck.on{border-color:#2b2b3a;transform:scale(1.02)}
+.deck.on::after{content:"✓";position:absolute;top:8px;right:12px;font-weight:700}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{padding:8px 14px;border-radius:99px;background:#f0ebf4;font-weight:400;font-size:.92rem}
+.chip.on{background:var(--ink);color:#fff}
+.row{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:6px}
+.sw{position:relative;width:48px;height:28px;border-radius:99px;background:#d6d0dd;flex:none;transition:.2s}
+.sw::after{content:"";position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:#fff;transition:.2s}
+.sw.on{background:var(--green)}.sw.on::after{left:23px}
+.note{font-size:.82rem;color:#8a7f95;margin-top:4px}
+.names{display:flex;gap:8px;margin-top:8px}
+.names input{flex:1;min-width:0;border:1px solid #d9d2e0;border-radius:12px;padding:10px 12px;font:inherit;font-weight:400}
+.add{padding:0 16px;border-radius:12px;background:#f0ebf4;font-weight:600}
+.go{display:block;width:100%;margin-top:16px;padding:16px;border-radius:16px;background:linear-gradient(120deg,var(--orange),var(--pink));color:#fff;font-weight:600;font-size:1.15rem;letter-spacing:.02em;box-shadow:0 8px 20px rgba(194,55,138,.35)}
+.links{display:flex;justify-content:center;gap:22px;margin-top:18px;font-weight:400;font-size:.95rem}
+.links a,.links button{color:#6a3f7a;text-decoration:underline}
+.foot{font-size:.76rem;color:#8a7f95;text-align:center;margin-top:20px;padding:0 10px}
+/* PLAY */
+#play{position:fixed;inset:0;display:flex;flex-direction:column;color:#fff;padding:calc(10px + env(safe-area-inset-top)) 16px calc(14px + env(safe-area-inset-bottom))}
+.top{display:flex;justify-content:space-between;align-items:center;font-size:.85rem;letter-spacing:.12em;text-transform:uppercase;font-weight:500}
+.top button{padding:10px 8px;font-weight:500;letter-spacing:.06em}
+.turn{text-align:center;font-weight:500;font-size:1.05rem;height:34px;margin-top:6px}
+.turn span{background:rgba(255,255,255,.25);padding:5px 16px;border-radius:99px;display:inline-block}
+.stage{flex:1;display:flex;align-items:center;justify-content:center;min-height:0;touch-action:pan-y}
+.card{background:#fff;color:var(--ink);width:100%;max-width:520px;border-radius:26px;padding:34px 26px;min-height:min(56vh,420px);display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;box-shadow:0 18px 50px rgba(30,10,40,.3);position:relative}
+.card .mark{position:absolute;top:18px;left:0;right:0;font-size:.7rem;letter-spacing:.3em;text-transform:uppercase;color:#b3a9bd;font-weight:500}
+.card .q{font-size:clamp(1.35rem,5.6vw,2rem);font-weight:300;line-height:1.3}
+.card.anim{animation:in .28s ease}
+@keyframes in{from{opacity:0;transform:translateX(26px)}to{opacity:1;transform:none}}
+.card.back{animation:inb .28s ease}
+@keyframes inb{from{opacity:0;transform:translateX(-26px)}to{opacity:1;transform:none}}
+.bar{display:flex;align-items:center;justify-content:space-between;gap:10px;max-width:520px;width:100%;margin:12px auto 0}
+.bar button{width:56px;height:56px;border-radius:50%;background:rgba(255,255,255,.22);font-size:1.4rem;display:flex;align-items:center;justify-content:center}
+.bar .next{flex:1;height:56px;border-radius:99px;background:#fff;color:var(--ink);font-weight:600;font-size:1.1rem}
+.heart.on{background:#fff;color:#e0405a}
+.hint{text-align:center;font-size:.76rem;opacity:.85;margin-top:8px;height:18px}
+/* sheets */
+.sheet{position:fixed;inset:0;background:rgba(20,10,30,.55);display:flex;align-items:flex-end;justify-content:center;z-index:20}
+.sheet>div{background:#fff;color:var(--ink);width:100%;max-width:560px;border-radius:24px 24px 0 0;padding:20px 18px calc(22px + env(safe-area-inset-bottom));max-height:82vh;overflow:auto}
+.sheet h3{font-weight:600;margin-bottom:10px}
+.sbtn{display:flex;align-items:center;gap:12px;width:100%;padding:14px;border-radius:14px;background:#f5f1f8;margin-top:8px;font-weight:500;text-align:left}
+.sbtn.wa{background:#e3f7ea}.sbtn.ms{background:#e6efff}
+.saved{padding:12px 0;border-bottom:1px solid #eee;display:flex;gap:10px;align-items:flex-start}
+.saved p{flex:1;font-weight:400}
+.saved button{font-size:1.2rem;padding:2px 6px}
+.toast{position:fixed;left:50%;bottom:90px;transform:translateX(-50%);background:#2b2b3a;color:#fff;padding:10px 18px;border-radius:99px;font-size:.9rem;z-index:30;font-weight:400}
+.lead{text-align:center;font-weight:400;margin:2px 0 4px}.big{font-size:1.05rem}</style>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-VPR2M4TRFK"></script>
+<script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments)}gtag('js',new Date());gtag('config','G-VPR2M4TRFK',{page_location:location.origin+location.pathname+location.search});</script>
+</head>
+<body>
+<div id="home" class="wash">
+ <div class="hero"><div class="logo">love bombs</div><div class="tag">KINDNESS CARDS</div></div>
+ <div class="wrap">
+  <div class="panel">
+   <p class="lead big">Make someone feel appreciated. It is one of the kindest things you can do.</p>
+   <p class="note" style="text-align:center">Draw a card, then say it in person, send it in a message, or leave it anonymously.</p>
+   <button class="go" id="go">Draw a Love Bomb</button>
+   <div class="links"><button id="showSaved">♥ Saved (<span id="sc">0</span>)</button><button id="sug">Suggest an idea</button><a href="index.html">Better Me games</a></div>
+  </div>
+  <p class="foot">Free, no sign-up. Your saved cards stay on this device. Love Bombs kindness cards are a physical card set from the makers of Better Me.</p>
+ </div>
+</div>
+<div id="play" class="hide">
+ <div class="top"><button id="quit">‹ Home</button><span id="count"></span><button id="sv">♥ Saved</button></div>
+ <div class="turn" id="turn"></div>
+ <div class="stage" id="stage"><div class="card" id="card"><div class="mark" id="mark">love bombs</div><div class="q" id="q"></div></div></div>
+ <div class="bar"><button id="prev" aria-label="Previous card">‹</button><button class="heart" id="heart" aria-label="Save this card">♥</button><button class="next" id="next">Next card ›</button><button id="share" aria-label="Share" title="Share"><svg class="shi" viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V3"/><path d="M8 7l4-4 4 4"/><path d="M7 10H6a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7a2 2 0 0 0-2-2h-1"/></svg></button></div>
+ <div class="hint" id="hint">Swipe or tap Next. Pick one for someone you know.</div>
+</div>
+<div id="sheet" class="sheet hide"><div id="sheetbody"></div></div>
+<script>
+const CARDS=[{"id":"L001","q":"I admire your patience"},{"id":"L002","q":"I admire your enthusiasm for your work"},{"id":"L003","q":"I'm impressed with your kid's manners.  It says a lot about you."},{"id":"L004","q":"I admire your ability to bring out the best in others"},{"id":"L005","q":"I really appreciate your comforting words.  Thank you."},{"id":"L006","q":"I'm proud of you"},{"id":"L007","q":"I'm sorry.  You're important to me and I want you to know I'm sorry."},{"id":"L008","q":"Your smile is contagious.  Thank you :)"},{"id":"L009","q":"I admire your enthusiasm for life"},{"id":"L010","q":"Thank you for being such a great listener"},{"id":"L011","q":"I really admire your parenting"},{"id":"L012","q":"Your sense of humor makes life more fun"},{"id":"L013","q":"I admire your bravery"},{"id":"L014","q":"You inspire me"},{"id":"L015","q":"I admire your integrity"},{"id":"L016","q":"Your kindness really made my day"},{"id":"L017","q":"You're a wonderful parent"},{"id":"L018","q":"You're a great role model"},{"id":"L019","q":"Your example inspires me to be better"},{"id":"L020","q":"I hope my kid grows up to be like you"},{"id":"L021","q":"I will never forget you"},{"id":"L022","q":"I really appreciate your dedication to your work"},{"id":"L023","q":"It's a privilege to have you as a friend"},{"id":"L024","q":"It's a privilege to work with you"},{"id":"L025","q":"It's a privilege to have you as a teacher"},{"id":"L026","q":"Talking with you is always a highlight of my day"},{"id":"L027","q":"You're a gift to those around you"},{"id":"L028","q":"The way you follow your dreams is inspiring"},{"id":"L029","q":"I admire your strength"},{"id":"L030","q":"You are one of the most helpful people I know"},{"id":"L031","q":"I admire your kindness"},{"id":"L032","q":"You brighten the day of those around you"},{"id":"L033","q":"I admire your big thinking"},{"id":"L034","q":"I'm really glad to have your advice when I need it.  Thank you."},{"id":"L035","q":"I'm really grateful to have you in my life"},{"id":"L036","q":"You're truly beautiful, inside and out."},{"id":"L037","q":"Thank you for everything you do.  You are appreciated."},{"id":"L038","q":"I really appreciate everything you've taught me"},{"id":"L039","q":"Your enthusiasm is contagious.  Thank you."},{"id":"L040","q":"Your encouragement has made me stronger.  Thank you."},{"id":"L041","q":"I love that I can truly be myself with you"},{"id":"L042","q":"Many of my favorite memories are with you"},{"id":"L043","q":"I always have more fun when I'm with you"},{"id":"L044","q":"You were there when I really needed you.  I am forever grateful."},{"id":"L045","q":"You made my day.  Thank you."},{"id":"L046","q":"You inspire me to be a better person"},{"id":"L047","q":"I believe in you"},{"id":"L048","q":"We might not be related, but I consider you family."},{"id":"L049","q":"I really value your opinion.  Thank you."},{"id":"L050","q":"You're making a difference"},{"id":"L051","q":"I'd like to help.  What can I do for you?"},{"id":"L052","q":"I will always treasure the times we've had together"},{"id":"L053","q":"I love you"},{"id":"L054","q":"Your support really means a lot to me.  Thank you"},{"id":"L055","q":"You have a way of bringing people together"},{"id":"L056","q":"You've changed my life"},{"id":"L057","q":"I'd trust you with my life"},{"id":"L058","q":"You have great taste"},{"id":"L059","q":"You have a wonderful family.  I'm happy for you."},{"id":"L060","q":"I admire your ability to stay positive in challenging situations"},{"id":"L061","q":"I love your cooking"},{"id":"L062","q":"I'm excited for your big change. Wishing you the best!"},{"id":"L063","q":"I admire your courage"},{"id":"L064","q":"I admire your willingness to help others"},{"id":"L065","q":"I admire your courage to be yourself"},{"id":"L066","q":"I admire your hard work and discipline"},{"id":"L067","q":"I admire your determination"},{"id":"L068","q":"I admire your persistence"},{"id":"L069","q":"I admire your constant growth and learning"},{"id":"L070","q":"I appreciate your honesty"},{"id":"L071","q":"I admire your caring nature"},{"id":"L072","q":"Your creativity is inspiring"},{"id":"L073","q":"I admire your generosity"},{"id":"L074","q":"You have a way of lighting up a room"},{"id":"L075","q":"I appreciate the respect you show others"},{"id":"L076","q":"You are one of the most trustworthy people I know"},{"id":"L077","q":"This place wouldn't be the same without you"},{"id":"L078","q":"I always look forward to seeing you"},{"id":"L079","q":"You bring out the best in others"},{"id":"L080","q":"I admire your dedication to finishing what you start"},{"id":"L081","q":"I admire your way with words"},{"id":"L082","q":"Your eyes are stunning"},{"id":"L083","q":"The people you love are very lucky to have you"},{"id":"L084","q":"You're one of the most thoughtful people I know"},{"id":"L085","q":"You're always there for me. I really appreciate it."},{"id":"L086","q":"I admire your confidence"},{"id":"L087","q":"I hope my child grows up to be like you"},{"id":"L088","q":"Your child has excellent manners. Great job."},{"id":"L089","q":"Your generosity is inspiring"},{"id":"L090","q":"You are one of the most caring people I know.  I really appreciate you."},{"id":"L091","q":"You are one of the most reliable people I know.  Thank you."},{"id":"L092","q":"If you ever need someone to talk to, just let me know."},{"id":"L093","q":"I care about you, and I am here for you.  If there's anything I can do to help, please let me know."},{"id":"L094","q":"I get butterflies in my stomach when I know I'll see you soon."},{"id":"L095","q":"I always smile when I know I'll see you soon"},{"id":"L096","q":"Your calming presence is truly appreciated"},{"id":"L097","q":"If I really needed help, you'd be the first person I would call.  Thank you for being there for me."},{"id":"L098","q":"Your laughter is contagious"},{"id":"L099","q":"I feel like you understand me, and I really appreciate that."},{"id":"L100","q":"More than once, kind words from you have made my day.  Thank you."},{"id":"L101","q":"I have heard many people say good things about you, and I agree with them."},{"id":"L102","q":"You have helped me feel more optimistic about my future.  Thank you."},{"id":"L103","q":"My life is better with you in it"},{"id":"L104","q":"I admire your clear thinking"},{"id":"L105","q":"It's ok to make mistakes.  It means you're doing something."},{"id":"L106","q":"Thank you for always going the extra mile"}];
+const $=id=>document.getElementById(id);
+const store={get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
+const byId={};CARDS.forEach(c=>byId[c.id]=c);
+let S={hearts:store.get("lb_hearts",[])};
+let order=[],pos=0,current=null;
+const base=location.origin+location.pathname;
+const BGK="linear-gradient(160deg,#c2378a,#e8965a)";
+function save(){store.set("lb_hearts",S.hearts)}
+function shuffle(a){a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
+function toast(m){const t=document.createElement("div");t.className="toast";t.textContent=m;document.body.appendChild(t);setTimeout(()=>t.remove(),1800)}
+function renderHome(){$("sc").textContent=S.hearts.length}
+function startPlay(){
+ order=shuffle(CARDS.map(c=>c.id));pos=0;
+ $("home").classList.add("hide");$("play").classList.remove("hide");$("play").style.background=BGK;
+ show(order[0],"anim");
+}
+$("go").onclick=startPlay;
+function show(id,anim){
+ const c=byId[id];if(!c)return;
+ $("q").textContent=c.q;
+ const card=$("card");card.className="card";void card.offsetWidth;card.className="card "+(anim||"");
+ $("heart").classList.toggle("on",S.hearts.includes(id));
+ $("count").textContent=order.length>1?`${pos+1} of ${order.length}`:"";
+ current=id;
+}
+function next(){if(pos<order.length-1)pos++;else{order=shuffle(order);pos=0;toast("All cards drawn. Shuffling again!")}show(order[pos],"anim")}
+function prev(){if(pos>0){pos--;show(order[pos],"back")}}
+$("next").onclick=next;$("prev").onclick=prev;
+$("heart").onclick=()=>{const i=S.hearts.indexOf(current);if(i>=0){S.hearts.splice(i,1)}else{S.hearts.push(current);toast("Saved ♥")}save();$("heart").classList.toggle("on",S.hearts.includes(current))};
+let sx=null;
+$("stage").addEventListener("touchstart",e=>{sx=e.touches[0].clientX},{passive:true});
+$("stage").addEventListener("touchend",e=>{if(sx===null)return;const dx=e.changedTouches[0].clientX-sx;sx=null;if(dx<-50)next();else if(dx>50)prev()},{passive:true});
+document.addEventListener("keydown",e=>{if($("play").classList.contains("hide")||!$("sheet").classList.contains("hide"))return;if(e.key==="ArrowRight"||e.key===" ")next();if(e.key==="ArrowLeft")prev()});
+$("quit").onclick=()=>{$("play").classList.add("hide");$("home").classList.remove("hide");location.hash="";renderHome()};
+function openSheet(html){$("sheetbody").innerHTML=html;$("sheet").classList.remove("hide")}
+$("sheet").onclick=e=>{if(e.target===$("sheet"))$("sheet").classList.add("hide")};
+function link(id){return base+"#c="+id}
+function shareText(c){return "A Love Bomb for you: \""+c.q+"\""}
+$("share").onclick=()=>shareCard(current);
+function shareCard(id){
+ const c=byId[id],u=link(id),t=shareText(c);
+ if(navigator.share){navigator.share({title:"Love Bombs",text:t,url:u}).catch(()=>{});return}
+ openSheet(`<h3>Send this Love Bomb</h3>
+ <a class="sbtn wa" href="https://wa.me/?text=${encodeURIComponent(t+" "+u)}" target="_blank" rel="noopener">💬 WhatsApp</a>
+ <a class="sbtn ms" href="https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(u)}" target="_blank" rel="noopener">Ⓜ Facebook / Messenger</a>
+ <a class="sbtn" href="sms:?&body=${encodeURIComponent(t+" "+u)}">✉ Text message</a>
+ <a class="sbtn" href="mailto:?subject=${encodeURIComponent("A Love Bomb for you")}&body=${encodeURIComponent(t+"\n\n"+u)}">📧 Email</a>
+ <button class="sbtn" id="cp">🔗 Copy link</button>`);
+ $("cp").onclick=()=>{(navigator.clipboard?navigator.clipboard.writeText(t+" "+u):Promise.reject()).then(()=>{toast("Link copied");$("sheet").classList.add("hide")}).catch(()=>prompt("Copy this link:",u))};
+}
+const SHI='<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V3"/><path d="M8 7l4-4 4 4"/><path d="M7 10H6a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7a2 2 0 0 0-2-2h-1"/></svg>';
+function showSaved(){
+ if(!S.hearts.length){openSheet("<h3>♥ Saved cards</h3><p>Nothing saved yet. Tap the ♥ on any card to keep it here.</p>");return}
+ openSheet("<h3>♥ Saved cards</h3>"+S.hearts.slice().reverse().map(id=>byId[id]?`<div class="saved"><p>${byId[id].q.replace(/</g,"&lt;")}</p><button data-s="${id}" aria-label="Share">${SHI}</button><button data-u="${id}" aria-label="Remove">✕</button></div>`:"").join(""));
+ $("sheetbody").onclick=e=>{const s=e.target.closest("[data-s]"),u=e.target.closest("[data-u]");
+  if(s){$("sheet").classList.add("hide");shareCard(s.dataset.s)}
+  if(u){S.hearts=S.hearts.filter(x=>x!==u.dataset.u);save();$("sc").textContent=S.hearts.length;if(current)$("heart").classList.toggle("on",S.hearts.includes(current));showSaved()}};
+}
+$("showSaved").onclick=showSaved;$("sv").onclick=showSaved;
+$("sug").onclick=()=>openSuggest("lovebombs");
+/* shared single card link: lovebombs.html#c=L012 */
+function fromHash(){
+ const m=location.hash.match(/c=(L\d+)/);
+ if(m&&byId[m[1]]){
+  $("home").classList.add("hide");$("play").classList.remove("hide");$("play").style.background=BGK;
+  order=[m[1]];pos=0;show(m[1],"anim");
+  $("hint").textContent="Someone sent you a Love Bomb.";
+  $("next").textContent="Draw more Love Bombs ›";
+  $("next").onclick=()=>{$("next").textContent="Next card ›";$("next").onclick=next;location.hash="";startPlay()};
+ }
+}
+renderHome();fromHash();
+</script>
+<script>
+/* Shared suggestion box for the static pages (Topix, Love Bombs). Inserted into their templates by their build scripts.
+   Same Firestore collection ("suggestions") and same fields as the Better Me box in site_app.js, so there is ONE inbox.
+   Call openSuggest('topix') or openSuggest('lovebombs'). Firebase is only loaded when someone opens the box. */
+(function(){
+var CFG={apiKey:"AIzaSyApYY65cMD4QyKcWDVliFJ6-tb1mpNeThU",authDomain:"better-me-game.firebaseapp.com",projectId:"better-me-game",storageBucket:"better-me-game.firebasestorage.app",messagingSenderId:"385247377726",appId:"1:385247377726:web:5176e8508a03b9e4e7946f"};
+var CONSENT_VERSION="2026-11-16";
+var CONSENT_TEXT="I made this up myself, and I'm happy to share it with Dan. He can use it, as written or reworded, in any of his products (Better Me, Topix, Love Bombs, and future ones). No payment needed.";
+var V="10.12.2",LIBS=["firebase-app-compat.js","firebase-auth-compat.js","firebase-firestore-compat.js"];
+var db=null,uid=null,ready=null;
+function loadScript(src){return new Promise(function(ok,no){var s=document.createElement("script");s.src=src;s.onload=ok;s.onerror=no;document.head.appendChild(s)})}
+function connect(){
+ if(ready)return ready;
+ ready=(window.firebase?Promise.resolve():LIBS.reduce(function(p,l){return p.then(function(){return loadScript("https://www.gstatic.com/firebasejs/"+V+"/"+l)})},Promise.resolve()))
+  .then(function(){firebase.initializeApp(CFG);db=firebase.firestore();return firebase.auth().signInAnonymously()})
+  .then(function(c){uid=c.user.uid}).catch(function(e){ready=null;throw e});
+ return ready;
+}
+/* credit name as the person chose: first only / first + last initial / full */
+function creditName(choice,raw){
+ var w=(raw||"").trim().replace(/\s+/g," ").split(" ").filter(Boolean);if(!w.length)return "";
+ if(choice==="first")return w[0].slice(0,40);
+ if(choice==="initial")return w.length>1?(w[0].slice(0,30)+" "+w[w.length-1].charAt(0).toUpperCase()+"."):w[0].slice(0,40);
+ return w.join(" ").slice(0,60);
+}
+var css="#sgx{position:fixed;inset:0;background:rgba(20,10,30,.55);display:flex;align-items:flex-end;justify-content:center;z-index:50;font-family:inherit}"+
+"#sgx>div{background:#fff;color:#2b2b3a;width:100%;max-width:560px;border-radius:24px 24px 0 0;padding:20px 18px calc(22px + env(safe-area-inset-bottom));max-height:90vh;overflow:auto;font-weight:400}"+
+"#sgx h3{font-weight:600;margin-bottom:6px}#sgx label{display:block;font-size:.88rem;margin-top:12px;margin-bottom:3px}"+
+"#sgx select,#sgx textarea,#sgx input[type=text]{width:100%;font:inherit;border:1px solid #d9d2e0;border-radius:12px;padding:10px 12px;background:#fff;color:#2b2b3a}"+
+"#sgx .ck{display:flex;gap:10px;align-items:flex-start;margin-top:14px;font-size:.88rem}#sgx .ck input{margin-top:3px;width:auto}"+
+"#sgx .sm{font-size:.8rem;color:#6d6478;margin-top:6px}#sgx .go2{display:block;width:100%;margin-top:16px;padding:14px;border-radius:14px;background:#2b2b3a;color:#fff;font-weight:600;border:0;font:inherit;font-weight:600;cursor:pointer}"+
+"#sgx .x{float:right;border:0;background:none;font-size:1.3rem;cursor:pointer;color:inherit}#sgx .err{color:#b3261e;font-size:.88rem;margin-top:8px}";
+function openSuggest(game){
+ if(!document.getElementById("sgx-css")){var st=document.createElement("style");st.id="sgx-css";st.textContent=css;document.head.appendChild(st)}
+ var o=document.createElement("div");o.id="sgx";
+ o.innerHTML='<div><button class="x" aria-label="Close">✕</button><h3>Suggest something</h3>'+
+ '<p class="sm" style="margin-top:0">A card idea, or something about how the game or site works. Dan reads every one.</p>'+
+ '<label for="sg_t">About</label><select id="sg_t"><option>A card idea</option><option>How the game or site works</option><option>Other</option></select>'+
+ '<label for="sg_x">Your suggestion</label><textarea id="sg_x" rows="4" maxlength="2000" placeholder="Write it here"></textarea>'+
+ '<label class="ck"><input type="checkbox" id="sg_c"><span>'+CONSENT_TEXT.replace(/&/g,"&amp;")+'</span></label>'+
+ '<p class="sm">The box above is needed for card ideas. Under 18? Ask a parent or guardian first.</p>'+
+ '<label for="sg_cr">Credit me if you use it</label><select id="sg_cr"><option value="none">No credit, thanks</option><option value="first">First name only</option><option value="initial">First name + last initial</option><option value="full">Full name</option></select>'+
+ '<div id="sg_nm" style="display:none"><label for="sg_n">Your name</label><input type="text" id="sg_n" maxlength="60" autocomplete="off"><p class="sm" id="sg_pv"></p></div>'+
+ '<div class="err" id="sg_e"></div><button class="go2" id="sg_go">Send</button></div>';
+ document.body.appendChild(o);
+ var $=function(i){return document.getElementById(i)};
+ function close(){o.remove()}
+ o.onclick=function(e){if(e.target===o||e.target.classList.contains("x"))close()};
+ function pv(){var c=$("sg_cr").value;$("sg_nm").style.display=c==="none"?"none":"block";var n=creditName(c,$("sg_n").value);$("sg_pv").textContent=n?"It will read: \"Card concept donated by "+n+"\"":""}
+ $("sg_cr").onchange=pv;$("sg_n").oninput=pv;
+ $("sg_go").onclick=function(){
+  var text=$("sg_x").value.trim(),topic=$("sg_t").value,ok=$("sg_c").checked,cr=$("sg_cr").value,nm=creditName(cr,$("sg_n").value),err=$("sg_e");
+  if(!text){err.textContent="Please write your suggestion first.";return}
+  if(topic==="A card idea"&&!ok){err.textContent="For a card idea, please tick the box so Dan can use it.";return}
+  if(cr!=="none"&&!nm){err.textContent="Type your name, or choose No credit.";return}
+  err.textContent="";$("sg_go").disabled=true;$("sg_go").textContent="Sending...";
+  connect().then(function(){
+   var s={by:uid,name:(cr!=="none"&&nm)||"Visitor",text:text.slice(0,2000),topic:topic==="A card idea"?"A card":(topic==="Other"?"Other":"The app"),at:Date.now(),plus:[],
+    game:game,consent:!!ok,consentText:ok?CONSENT_TEXT:"",consentVersion:CONSENT_VERSION,consentAt:ok?Date.now():0,creditChoice:cr,creditName:cr==="none"?"":nm};
+   return db.collection("suggestions").add(s);
+  }).then(function(){o.querySelector("div").innerHTML='<h3>Thank you!</h3><p>Your suggestion was sent to Dan.</p><button class="go2" id="sg_ok">Close</button>';$("sg_ok").onclick=close})
+  .catch(function(){$("sg_go").disabled=false;$("sg_go").textContent="Send";err.textContent="Could not send. Check your connection and try again."});
+ };
+}
+window.openSuggest=openSuggest;
+})();
+
+</script>
+</body>
+</html>

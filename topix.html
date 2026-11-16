@@ -103,7 +103,7 @@ button{font:inherit;cursor:pointer;border:0;background:none;color:inherit}
    <div class="names"><input id="nm" maxlength="20" placeholder="Add a name" autocomplete="off"><button class="add" id="addn">Add</button></div>
    <div class="chips" id="players" style="margin-top:10px"></div>
    <button class="go" id="go">Start</button>
-   <div class="links"><button id="showSaved">♥ Saved (<span id="sc">0</span>)</button><a href="index.html">Better Me games</a></div>
+   <div class="links"><button id="showSaved">♥ Saved (<span id="sc">0</span>)</button><button id="sug">Suggest an idea</button><a href="index.html">Better Me games</a></div>
   </div>
   <p class="foot">Free, no sign-up. Your saved cards stay on this device. Topix cards are also sold as a physical card set on Amazon.</p>
  </div>
@@ -215,7 +215,7 @@ function showSaved(){
   if(s){$("sheet").classList.add("hide");shareCard(s.dataset.s)}
   if(u){S.hearts=S.hearts.filter(x=>x!==u.dataset.u);save();$("sc").textContent=S.hearts.length;if(current)$("heart").classList.toggle("on",S.hearts.includes(current));showSaved()}};
 }
-$("showSaved").onclick=showSaved;$("sv").onclick=showSaved;
+$("sug").onclick=()=>openSuggest("topix");$("showSaved").onclick=showSaved;$("sv").onclick=showSaved;
 
 /* shared single card link: topix.html#c=M012 */
 function fromHash(){
@@ -230,6 +230,74 @@ function fromHash(){
  }
 }
 renderHome();fromHash();
+</script>
+<script>
+/* Shared suggestion box for the static pages (Topix, Love Bombs). Inserted into their templates by their build scripts.
+   Same Firestore collection ("suggestions") and same fields as the Better Me box in site_app.js, so there is ONE inbox.
+   Call openSuggest('topix') or openSuggest('lovebombs'). Firebase is only loaded when someone opens the box. */
+(function(){
+var CFG={apiKey:"AIzaSyApYY65cMD4QyKcWDVliFJ6-tb1mpNeThU",authDomain:"better-me-game.firebaseapp.com",projectId:"better-me-game",storageBucket:"better-me-game.firebasestorage.app",messagingSenderId:"385247377726",appId:"1:385247377726:web:5176e8508a03b9e4e7946f"};
+var CONSENT_VERSION="2026-11-16";
+var CONSENT_TEXT="I made this up myself, and I'm happy to share it with Dan. He can use it, as written or reworded, in any of his products (Better Me, Topix, Love Bombs, and future ones). No payment needed.";
+var V="10.12.2",LIBS=["firebase-app-compat.js","firebase-auth-compat.js","firebase-firestore-compat.js"];
+var db=null,uid=null,ready=null;
+function loadScript(src){return new Promise(function(ok,no){var s=document.createElement("script");s.src=src;s.onload=ok;s.onerror=no;document.head.appendChild(s)})}
+function connect(){
+ if(ready)return ready;
+ ready=(window.firebase?Promise.resolve():LIBS.reduce(function(p,l){return p.then(function(){return loadScript("https://www.gstatic.com/firebasejs/"+V+"/"+l)})},Promise.resolve()))
+  .then(function(){firebase.initializeApp(CFG);db=firebase.firestore();return firebase.auth().signInAnonymously()})
+  .then(function(c){uid=c.user.uid}).catch(function(e){ready=null;throw e});
+ return ready;
+}
+/* credit name as the person chose: first only / first + last initial / full */
+function creditName(choice,raw){
+ var w=(raw||"").trim().replace(/\s+/g," ").split(" ").filter(Boolean);if(!w.length)return "";
+ if(choice==="first")return w[0].slice(0,40);
+ if(choice==="initial")return w.length>1?(w[0].slice(0,30)+" "+w[w.length-1].charAt(0).toUpperCase()+"."):w[0].slice(0,40);
+ return w.join(" ").slice(0,60);
+}
+var css="#sgx{position:fixed;inset:0;background:rgba(20,10,30,.55);display:flex;align-items:flex-end;justify-content:center;z-index:50;font-family:inherit}"+
+"#sgx>div{background:#fff;color:#2b2b3a;width:100%;max-width:560px;border-radius:24px 24px 0 0;padding:20px 18px calc(22px + env(safe-area-inset-bottom));max-height:90vh;overflow:auto;font-weight:400}"+
+"#sgx h3{font-weight:600;margin-bottom:6px}#sgx label{display:block;font-size:.88rem;margin-top:12px;margin-bottom:3px}"+
+"#sgx select,#sgx textarea,#sgx input[type=text]{width:100%;font:inherit;border:1px solid #d9d2e0;border-radius:12px;padding:10px 12px;background:#fff;color:#2b2b3a}"+
+"#sgx .ck{display:flex;gap:10px;align-items:flex-start;margin-top:14px;font-size:.88rem}#sgx .ck input{margin-top:3px;width:auto}"+
+"#sgx .sm{font-size:.8rem;color:#6d6478;margin-top:6px}#sgx .go2{display:block;width:100%;margin-top:16px;padding:14px;border-radius:14px;background:#2b2b3a;color:#fff;font-weight:600;border:0;font:inherit;font-weight:600;cursor:pointer}"+
+"#sgx .x{float:right;border:0;background:none;font-size:1.3rem;cursor:pointer;color:inherit}#sgx .err{color:#b3261e;font-size:.88rem;margin-top:8px}";
+function openSuggest(game){
+ if(!document.getElementById("sgx-css")){var st=document.createElement("style");st.id="sgx-css";st.textContent=css;document.head.appendChild(st)}
+ var o=document.createElement("div");o.id="sgx";
+ o.innerHTML='<div><button class="x" aria-label="Close">✕</button><h3>Suggest something</h3>'+
+ '<p class="sm" style="margin-top:0">A card idea, or something about how the game or site works. Dan reads every one.</p>'+
+ '<label for="sg_t">About</label><select id="sg_t"><option>A card idea</option><option>How the game or site works</option><option>Other</option></select>'+
+ '<label for="sg_x">Your suggestion</label><textarea id="sg_x" rows="4" maxlength="2000" placeholder="Write it here"></textarea>'+
+ '<label class="ck"><input type="checkbox" id="sg_c"><span>'+CONSENT_TEXT.replace(/&/g,"&amp;")+'</span></label>'+
+ '<p class="sm">The box above is needed for card ideas. Under 18? Ask a parent or guardian first.</p>'+
+ '<label for="sg_cr">Credit me if you use it</label><select id="sg_cr"><option value="none">No credit, thanks</option><option value="first">First name only</option><option value="initial">First name + last initial</option><option value="full">Full name</option></select>'+
+ '<div id="sg_nm" style="display:none"><label for="sg_n">Your name</label><input type="text" id="sg_n" maxlength="60" autocomplete="off"><p class="sm" id="sg_pv"></p></div>'+
+ '<div class="err" id="sg_e"></div><button class="go2" id="sg_go">Send</button></div>';
+ document.body.appendChild(o);
+ var $=function(i){return document.getElementById(i)};
+ function close(){o.remove()}
+ o.onclick=function(e){if(e.target===o||e.target.classList.contains("x"))close()};
+ function pv(){var c=$("sg_cr").value;$("sg_nm").style.display=c==="none"?"none":"block";var n=creditName(c,$("sg_n").value);$("sg_pv").textContent=n?"It will read: \"Card concept donated by "+n+"\"":""}
+ $("sg_cr").onchange=pv;$("sg_n").oninput=pv;
+ $("sg_go").onclick=function(){
+  var text=$("sg_x").value.trim(),topic=$("sg_t").value,ok=$("sg_c").checked,cr=$("sg_cr").value,nm=creditName(cr,$("sg_n").value),err=$("sg_e");
+  if(!text){err.textContent="Please write your suggestion first.";return}
+  if(topic==="A card idea"&&!ok){err.textContent="For a card idea, please tick the box so Dan can use it.";return}
+  if(cr!=="none"&&!nm){err.textContent="Type your name, or choose No credit.";return}
+  err.textContent="";$("sg_go").disabled=true;$("sg_go").textContent="Sending...";
+  connect().then(function(){
+   var s={by:uid,name:(cr!=="none"&&nm)||"Visitor",text:text.slice(0,2000),topic:topic==="A card idea"?"A card":(topic==="Other"?"Other":"The app"),at:Date.now(),plus:[],
+    game:game,consent:!!ok,consentText:ok?CONSENT_TEXT:"",consentVersion:CONSENT_VERSION,consentAt:ok?Date.now():0,creditChoice:cr,creditName:cr==="none"?"":nm};
+   return db.collection("suggestions").add(s);
+  }).then(function(){o.querySelector("div").innerHTML='<h3>Thank you!</h3><p>Your suggestion was sent to Dan.</p><button class="go2" id="sg_ok">Close</button>';$("sg_ok").onclick=close})
+  .catch(function(){$("sg_go").disabled=false;$("sg_go").textContent="Send";err.textContent="Could not send. Check your connection and try again."});
+ };
+}
+window.openSuggest=openSuggest;
+})();
+
 </script>
 </body>
 </html>
