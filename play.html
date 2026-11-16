@@ -197,6 +197,11 @@ details ol,details ul{margin:.4em 0;padding-left:1.3em}
 .chatmsg.mine{align-self:flex-end;text-align:right}
 .chatmeta{font-size:.72rem;color:var(--muted);margin-bottom:2px}
 .chattext{display:inline-block;text-align:left;background:var(--surface2);border-radius:12px;padding:7px 11px;white-space:pre-wrap;word-break:break-word}
+.chatreacts{display:flex;flex-wrap:wrap;gap:3px;margin-top:3px}
+.chatmsg.mine .chatreacts{justify-content:flex-end}
+.chatreacts button.react{font-size:.85rem;min-height:24px;padding:0 6px}
+.chatreacts button.react.add{opacity:.55}
+.chatreacts.picker button.react{font-size:1.05rem;min-height:30px}
 .chatmsg.mine .chattext{background:var(--lav);color:var(--accentFg)}
 .chatform{display:flex;gap:6px;padding:8px;border-top:1px solid var(--line)}
 .chatform input{flex:1;min-width:0;margin:0}
@@ -270,7 +275,7 @@ const OFFLINE={"M": [0, 1, 4, 10, 11, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42
 /* PTS[deck][i] = [sharing pts, commitment pts, other option label, other option pts, most points allowed] */
 const PTS={"M":[[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[0,2,"I already use a visible affirmation",2,2],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[0,1,"I already use a vision board",1,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,1,"",0,2],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,2,"",0,3],[0,2,"",0,2],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[0,1,"",0,1],[1,0,"",0,1],[1,1,"",0,2],[1,0,"",0,1]],"T":[[1,1,"",0,2],[1,1,"",0,2],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,1,"",0,2],[0,1,"I shared a rewarding time I gave time or money",1,2],[1,0,"",0,1],[1,1,"",0,2],[1,1,"",0,2],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[0,1,"",0,1],[0,1,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,1,"",0,2],[1,0,"",0,1],[0,1,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,1,"",0,2],[1,1,"",0,2],[1,0,"",0,1],[0,1,"",0,1],[1,0,"",0,1],[1,1,"",0,2],[1,0,"",0,1],[1,1,"",0,2],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[0,1,"",0,1],[1,1,"",0,2],[1,0,"",0,1],[1,0,"",0,1],[0,1,"I already have written goals",1,1],[1,0,"",0,1],[1,1,"",0,2]],"B":[[1,0,"",0,1],[1,0,"",0,1],[0,1,"I already read food labels",1,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[0,1,"I’m usually well rested",1,1],[0,1,"I already drink plenty of water",1,2],[1,0,"",0,1],[1,1,"",0,2],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[0,1,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,1,"",0,2],[1,0,"",0,1],[1,1,"",0,2],[1,1,"",0,2],[1,1,"",0,2],[1,0,"",0,1],[1,0,"I’m a doctor, nurse, scientist or inventor",1,2],[1,1,"",0,2],[1,1,"",0,2],[0,1,"",0,1],[1,0,"",0,1],[1,1,"",0,2],[1,1,"",0,2],[1,0,"",0,1],[1,1,"",0,2],[0,1,"",0,1],[1,1,"",0,2],[0,1,"I think my current habits will get me there",1,1],[1,1,"",0,2]],"H":[[1,0,"",0,1],[1,2,"",0,3],[0,1,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[0,2,"",0,2],[0,2,"",0,2],[1,1,"",0,2],[1,0,"",0,1],[1,1,"",0,2],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,1,"",0,2],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[0,2,"I’ve volunteered in the last 3 months",1,3],[1,1,"",0,2],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,1,"",0,2],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1]],"P":[[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,2,"",0,3],[1,0,"",0,1],[0,1,"",0,1],[1,1,"",0,2],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[0,1,"",0,1],[1,1,"",0,2],[1,1,"",0,2],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,1,"",0,2],[1,0,"",0,1],[1,1,"",0,2],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[0,2,"I answered “yes” (I’m a good listener)",1,2],[1,0,"",0,1],[0,2,"",0,2],[1,0,"",0,1],[1,0,"",0,1],[1,1,"",0,2],[0,1,"I have nothing borrowed to return",1,1],[0,1,"I can’t think of an unfulfilled promise",1,1],[0,1,"",0,1],[1,1,"",0,2],[0,1,"",0,1],[0,1,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,1,"",0,2],[1,1,"",0,2],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,1,"",0,2],[1,1,"",0,2],[1,0,"",0,1],[1,1,"",0,2],[0,1,"I told a joke now",1,1]],"FF":[[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1]]};
 
-const BUILD='c5b3d63eab';
+const BUILD='ae8e839c6e';
 
 /* ============ QUICK PLAY (bettermegame.com) ============ */
 /* Firebase web config: these values are public by design (they identify the project, they are not passwords). */
@@ -798,6 +803,21 @@ function chatReadAt(){return Number(lsGet('bm_chatread_'+gid))||0}
 function chatMarkRead(){const last=chat.length?chat[chat.length-1].at||0:0;if(last>chatReadAt())lsSet('bm_chatread_'+gid,String(last))}
 function chatUnread(){const r=chatReadAt();return chat.filter(m=>m.by!==me&&(m.at||0)>r).length}
 function chatTime(t){if(!t)return '';const d=new Date(t),n=new Date();return d.toDateString()===n.toDateString()?d.toLocaleTimeString([], {hour:'numeric',minute:'2-digit'}):d.toLocaleDateString([], {month:'short',day:'numeric'})}
+/* Emoji reactions on chat messages (Dan, 2026-11-16): same emoji as the cards. Existing ones show as small chips (tap to add/remove yours);
+   a small ☺ button opens the picker. Stored on the message as react.<player> = [emoji...]. */
+function chatReacts(m){
+  const r=m.react||{};const used=EMOJIS.filter(e=>Object.keys(r).some(u=>(r[u]||[]).includes(e)));
+  const chip=e=>{const who=Object.keys(r).filter(u=>(r[u]||[]).includes(e)),on=who.includes(me);
+    return `<button type="button" class="react ${on?'on':''}" data-chat="react" data-arg="${m.id}|${e}" aria-pressed="${on}" title="${esc(who.map(u=>nm(u)).join(', ')||'React')}">${e}${who.length?` <span>${who.length}</span>`:''}</button>`};
+  const open=ui.chatPick===m.id;
+  return `<div class="chatreacts">${used.map(chip).join('')}<button type="button" class="react add" data-chat="pick" data-arg="${m.id}" aria-label="Add a reaction" title="React">${open?'✕':'☺'}</button></div>${open?`<div class="chatreacts picker">${EMOJIS.map(chip).join('')}</div>`:''}`;
+}
+async function toggleChatReact(arg){
+  const [id,e]=arg.split('|');const m=chat.find(x=>x.id===id);if(!m||!EMOJIS.includes(e)||!chatOK())return;
+  const has=((m.react||{})[me]||[]).includes(e);
+  await fs.collection('games').doc(gid).collection('chat').doc(id).update({['react.'+me]:has?FVx().arrayRemove(e):FVx().arrayUnion(e)});
+  ui.chatPick=null;
+}
 function renderChat(){
   let dock=$('#chatdock');
   if(!chatOK()){if(dock)dock.remove();return}
@@ -810,7 +830,7 @@ function renderChat(){
     <div id="chatlist">${chat.length?chat.map(m=>`<div class="chatmsg ${m.by===me?'mine':''}"><div class="chatmeta">${m.by===me?'You':esc(m.name||nameOf(m.by))} · ${chatTime(m.at)}</div>${m.photo&&okThumb(m.t)
         ?`<button type="button" class="phbtn chatph" data-ph="view" data-arg="${esc(m.photo)}" data-who="${esc(m.by===me?'You':(m.name||nameOf(m.by)))}" aria-label="Open photo"><img src="${esc(m.t)}" alt=""></button>`
         :m.audio?clipBtn({id:m.audio,dur:m.dur},'Voice message',m.by===me?'You':(m.name||nameOf(m.by)),'chattext voicebtn')
-        :`<div class="chattext">${esc(m.text)}</div>`}</div>`).join('')
+        :`<div class="chattext">${esc(m.text)}</div>`}${chatReacts(m)}</div>`).join('')
       :'<p class="small muted" style="text-align:center;margin:18px 0">No messages yet. Say hi 👋</p>'}</div>
     ${ui.rec?`<div class="chatform recbar"><span class="recdot" aria-hidden="true"></span><span id="rectime" style="flex:1">Recording ${fmtDur(recSecs())} / 1:00</span>
         <button class="small" type="button" data-chat="reccancel">Cancel</button><button class="primary small" type="button" data-chat="recsend">Send</button></div>`
@@ -859,6 +879,8 @@ function alertChat(t){const l=$('#chatlist');if(l){const p=document.createElemen
 document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('[data-chat]');if(!b||b.tagName==='FORM')return;
   if(b.dataset.chat==='open'){ui.chatOpen=true;chatMarkRead();renderChat();const i=$('#chatin');if(i)i.focus();const l=$('#chatlist');if(l)l.scrollTop=l.scrollHeight}
   if(b.dataset.chat==='close'){stopRec(true);ui.chatOpen=false;chatMarkRead();renderChat()}
+  if(b.dataset.chat==='pick'){ui.chatPick=ui.chatPick===b.dataset.arg?null:b.dataset.arg;renderChat()}
+  if(b.dataset.chat==='react')toggleChatReact(b.dataset.arg).then(renderChat).catch(e=>console.warn('chat react',e));
   if(b.dataset.chat==='rec')startRec();
   if(b.dataset.chat==='recsend')stopRec(false);
   if(b.dataset.chat==='reccancel')stopRec(true);});
