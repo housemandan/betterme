@@ -183,7 +183,11 @@ details ol,details ul{margin:.4em 0;padding-left:1.3em}
 /* Game chat: a small corner button that opens a chat box. */
 #chatdock{position:fixed;right:16px;bottom:16px;z-index:50}
 .chatbtn{background:linear-gradient(135deg,var(--teal),var(--lav));color:var(--accentFg);border:0;border-radius:999px;padding:10px 16px;font-weight:700;box-shadow:0 4px 14px rgba(30,24,56,.25);cursor:pointer}
-.chatnew{background:var(--hintBg);color:var(--hintFg);border-radius:999px;padding:1px 8px;margin-left:4px;font-size:.8rem}
+.chatnew{background:#2f6fe4;color:#fff;font-weight:700;border-radius:999px;padding:1px 8px;margin-left:4px;font-size:.8rem}
+.newchip{display:inline-block;background:#2f6fe4;color:#fff;border-radius:999px;padding:0 7px;font-size:.7rem;font-weight:700;letter-spacing:.04em;vertical-align:middle}
+.newdot{color:#2f6fe4;font-weight:700;font-size:.8rem;white-space:nowrap}
+.reply.isnew{border-left-color:#2f6fe4}
+.newbanner{border-left:4px solid #2f6fe4}
 .chatbox{width:min(360px,calc(100vw - 32px));height:min(460px,70vh);display:flex;flex-direction:column;background:var(--surface);color:var(--fg);border:1px solid var(--line);border-radius:14px;box-shadow:0 10px 30px rgba(30,24,56,.25);overflow:hidden}
 .chathead{display:flex;align-items:center;gap:8px;padding:10px 12px;border-bottom:1px solid var(--line)}
 .chathead .muted{flex:1;font-size:.75rem}
@@ -266,7 +270,7 @@ const OFFLINE={"M": [0, 1, 4, 10, 11, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42
 /* PTS[deck][i] = [sharing pts, commitment pts, other option label, other option pts, most points allowed] */
 const PTS={"M":[[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[0,2,"I already use a visible affirmation",2,2],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[0,1,"I already use a vision board",1,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,1,"",0,2],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,2,"",0,3],[0,2,"",0,2],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[0,1,"",0,1],[1,0,"",0,1],[1,1,"",0,2],[1,0,"",0,1]],"T":[[1,1,"",0,2],[1,1,"",0,2],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,1,"",0,2],[0,1,"I shared a rewarding time I gave time or money",1,2],[1,0,"",0,1],[1,1,"",0,2],[1,1,"",0,2],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[0,1,"",0,1],[0,1,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,1,"",0,2],[1,0,"",0,1],[0,1,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,1,"",0,2],[1,1,"",0,2],[1,0,"",0,1],[0,1,"",0,1],[1,0,"",0,1],[1,1,"",0,2],[1,0,"",0,1],[1,1,"",0,2],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[0,1,"",0,1],[1,1,"",0,2],[1,0,"",0,1],[1,0,"",0,1],[0,1,"I already have written goals",1,1],[1,0,"",0,1],[1,1,"",0,2]],"B":[[1,0,"",0,1],[1,0,"",0,1],[0,1,"I already read food labels",1,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[0,1,"I’m usually well rested",1,1],[0,1,"I already drink plenty of water",1,2],[1,0,"",0,1],[1,1,"",0,2],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[0,1,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,1,"",0,2],[1,0,"",0,1],[1,1,"",0,2],[1,1,"",0,2],[1,1,"",0,2],[1,0,"",0,1],[1,0,"I’m a doctor, nurse, scientist or inventor",1,2],[1,1,"",0,2],[1,1,"",0,2],[0,1,"",0,1],[1,0,"",0,1],[1,1,"",0,2],[1,1,"",0,2],[1,0,"",0,1],[1,1,"",0,2],[0,1,"",0,1],[1,1,"",0,2],[0,1,"I think my current habits will get me there",1,1],[1,1,"",0,2]],"H":[[1,0,"",0,1],[1,2,"",0,3],[0,1,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[0,2,"",0,2],[0,2,"",0,2],[1,1,"",0,2],[1,0,"",0,1],[1,1,"",0,2],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,1,"",0,2],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[0,2,"I’ve volunteered in the last 3 months",1,3],[1,1,"",0,2],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,1,"",0,2],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1]],"P":[[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,2,"",0,3],[1,0,"",0,1],[0,1,"",0,1],[1,1,"",0,2],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[0,1,"",0,1],[1,1,"",0,2],[1,1,"",0,2],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,1,"",0,2],[1,0,"",0,1],[1,1,"",0,2],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[0,2,"I answered “yes” (I’m a good listener)",1,2],[1,0,"",0,1],[0,2,"",0,2],[1,0,"",0,1],[1,0,"",0,1],[1,1,"",0,2],[0,1,"I have nothing borrowed to return",1,1],[0,1,"I can’t think of an unfulfilled promise",1,1],[0,1,"",0,1],[1,1,"",0,2],[0,1,"",0,1],[0,1,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,1,"",0,2],[1,1,"",0,2],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,1,"",0,2],[1,1,"",0,2],[1,0,"",0,1],[1,1,"",0,2],[0,1,"I told a joke now",1,1]],"FF":[[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1]]};
 
-const BUILD='20ffa0b59d';
+const BUILD='c5b3d63eab';
 
 /* ============ QUICK PLAY (bettermegame.com) ============ */
 /* Firebase web config: these values are public by design (they identify the project, they are not passwords). */
@@ -370,17 +374,18 @@ function route(){
   const h=(location.hash||'').replace(/^#/,'');
   const next=/^[a-z0-9]{8,20}$/.test(h)?h:null;
   if(next===gid&&(unGame||!next)){render();return}
-  gid=next;game=null;me=AUTH;posts=[];postsReady=false;seenFull=null;seenPosts=null;party=null;ui.joinOpen=null;ui.commitOpen=false;ui.pts=1;ui.msg='';
+  gid=next;game=null;me=AUTH;posts=[];postsReady=false;seenFull=null;seenPosts=null;party=null;ui.joinOpen=null;ui.commitOpen=false;ui.pts=1;ui.msg='';ui.actHide=false;ui.actBase=gid?(actSeen(gid)||Date.now()):0;
   if(unGame)unGame();if(unPosts)unPosts();unGame=unPosts=null;stopChat();
   if(gid){
-    unGame=fs.collection('games').doc(gid).onSnapshot(s=>{const before=game;game=s.exists?Object.assign({id:s.id},s.data()):false;me=game?seatOf(game):AUTH;if(game){rememberGame(gid);loadWatched()}render();maybeBot();syncChat();noteViewer();roundsCheck();autoJoinNext();
+    unGame=fs.collection('games').doc(gid).onSnapshot(s=>{const before=game;game=s.exists?Object.assign({id:s.id},s.data()):false;me=game?seatOf(game):AUTH;if(game){rememberGame(gid);loadWatched();actMark()}render();maybeBot();syncChat();noteViewer();roundsCheck();autoJoinNext();
       /* This browser just moved the turn on (posted, skipped, started, removed someone): ask the alert sender to tell whoever is up. */
       if(s.metadata.hasPendingWrites&&game&&before&&game.status==='playing'&&(before.turn!==game.turn||before.status!=='playing'||before.players.length!==game.players.length))pingTurn()},()=>{game=false;render();syncChat()});
-    unPosts=fs.collection('games').doc(gid).collection('posts').orderBy('at','asc').onSnapshot(s=>{posts=s.docs.map(d=>Object.assign({id:d.id},d.data()));postsReady=true;render();maybeBot()},()=>{});
+    unPosts=fs.collection('games').doc(gid).collection('posts').orderBy('at','asc').onSnapshot(s=>{posts=s.docs.map(d=>Object.assign({id:d.id},d.data()));postsReady=true;actMark();render();maybeBot()},()=>{});
   }
   render();
 }
 function openGame(id){location.hash=id?id:'home'}
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')actMark()});
 
 /* ---------- same player, another device (Dan, 2026-11-14) ----------
    Each browser has its own sign-in, so opening a game on a second phone/browser looked like a new person.
@@ -717,7 +722,7 @@ async function onPhotoPicked(e){
 }
 async function chatPhoto(file){
   if(!chatOK())return;
-  try{const ph=await savePhoto(file);await fs.collection('games').doc(gid).collection('chat').add({by:me,name:myName,text:'📷 Photo',photo:ph.id,t:ph.t,at:Date.now()})}
+  try{const ph=await savePhoto(file);await fs.collection('games').doc(gid).collection('chat').add({by:me,name:myName,text:'📷 Photo',photo:ph.id,t:ph.t,at:Date.now()});bumpAct('chat')}
   catch(e){console.error(e);alertChat('That photo didn’t send. Try another one, or check your connection.')}
 }
 function applyPhotos(){
@@ -816,7 +821,7 @@ function renderChat(){
 async function sendChat(){
   const inp=$('#chatin');const text=(inp.value||'').trim().slice(0,500);if(!text||!chatOK())return;
   inp.value='';
-  try{await fs.collection('games').doc(gid).collection('chat').add({by:me,name:myName,text,at:Date.now()})}
+  try{await fs.collection('games').doc(gid).collection('chat').add({by:me,name:myName,text,at:Date.now()});bumpAct('chat')}
   catch(e){console.error(e);inp.value=text;alertChat('That didn’t send. Check your connection and try again.')}
 }
 /* Voice messages (Dan, 2026-11-14): up to 1 minute, low bitrate. The sound is stored in games/{id}/audio
@@ -843,7 +848,7 @@ async function startRec(){
     try{
       const ref=await fs.collection('games').doc(gid).collection('audio').add({by:me,data,mime,dur,at:Date.now()});
       audioCache.set(ref.id,data);
-      await fs.collection('games').doc(gid).collection('chat').add({by:me,name:myName,text:'🎤 Voice message ('+fmtDur(dur)+')',audio:ref.id,dur,at:Date.now()});
+      await fs.collection('games').doc(gid).collection('chat').add({by:me,name:myName,text:'🎤 Voice message ('+fmtDur(dur)+')',audio:ref.id,dur,at:Date.now()});bumpAct('chat');
     }catch(e){console.error(e);alertChat('That voice message didn’t send. Check your connection and try again.')}
   };
   recorder.start(1000);recStart=Date.now();ui.rec=true;renderChat();
@@ -862,6 +867,19 @@ document.addEventListener('submit',e=>{if(e.target&&e.target.dataset&&e.target.d
 /* ---------- actions ---------- */
 async function act(fn){if(busy)return;busy=true;ui.msg='';try{await fn()}catch(e){console.error(e);ui.msg='That didn’t save. Check your connection and try again.'}busy=false;render()}
 const G=()=>fs.collection('games').doc(gid);
+/* What's new (Dan, 2026-11-16): the game remembers the latest note / reply / chat message (game.act). Each device remembers when it last
+   looked (bm_actseen_<game>). Newer than that and written by someone else = a "New" dot in My games, and "NEW" chips inside the game. */
+function bumpAct(k){if(!gid||!game||game.practice||game.together)return;G().update({act:{at:Date.now(),by:me,k}}).catch(e=>console.warn('act',e))}
+function actSeen(id){return Number(lsGet('bm_actseen_'+id))||0}
+function actMark(){if(gid&&game&&document.visibilityState==='visible')lsSet('bm_actseen_'+gid,String(Date.now()))}
+function actNewGame(g){return !!(g&&g.act&&g.act.at&&g.act.by!==seatOf(g)&&g.act.at>actSeen(g.id))}
+function isNew(x){return !!(x&&x.by!==me&&(x.at||0)>(ui.actBase||0))}
+function newItems(){return posts.filter(p=>(p.kind==='note'||p.kind==='join')&&isNew(p))}
+function newBanner(){
+  if(ui.actHide)return '';const n=newItems();if(!n.length)return '';
+  const who=[...new Set(n.map(p=>nm(p.by)))].slice(0,3).join(', ');const voice=n.some(p=>p.voice&&p.voice.length);
+  return `<section class="panel newbanner"><div class="spread"><span>🔵 <b>${n.length} new</b> note${n.length>1?'s':''}/repl${n.length>1?'ies':'y'} from ${esc(who)}${voice?' 🎤':''}</span><span class="row" style="gap:6px"><button class="small primary" data-act="jumpnew">Show me</button><button class="small" data-act="hidenew">Got it</button></span></div></section>`}
+const NEWCHIP='<span class="newchip">NEW</span> ';
 const POSTS=()=>fs.collection('games').doc(gid).collection('posts');
 
 async function saveName(){
@@ -1161,7 +1179,7 @@ async function joinIn(parentId){
   const post={by:me,cat:parent.cat,idx:parent.idx,text:text.slice(0,4000),pts,kind:'join',parent:parentId,at:Date.now()};
   const c=readCommit(ui.jCommit,'#jc_');if(c===false)return;if(c){const cv=takeVoice('jc_text');if(cv)c.voice=cv;const cp=takePhotos('jc_text');if(cp)c.photos=cp;post.commit=c}
   const jv=takeVoice('j_'+parentId);if(jv)post.voice=jv;const jp=takePhotos('j_'+parentId);if(jp)post.photos=jp;
-  await POSTS().add(post);clearVoice('jc_text','j_'+parentId);
+  await POSTS().add(post);clearVoice('jc_text','j_'+parentId);bumpAct('reply');
   if(!isRounds()){const r=checkEnd(posts.concat(post));
     if(r.winners.length)await G().update({status:'over',winner:r.winners[0],pending:null})}
   ui.joinOpen=null;
@@ -1288,8 +1306,8 @@ function view(){
   if(game.status==='lobby')return msg+dupSelfBox()+approvalBox()+claimBox()+who+bar+alertsRow()+lobby()+rulesBox()+suggestBox();
   const party=celebration();
   /* Game over (Dan, 2026-11-14): the winner box is the very first thing, the game sheet right under it, then everything else. */
-  if(game.status==='over')return msg+approvalBox()+claimBox()+winnerBox()+commitsPanel()+party+scoreboard()+feed()+bar+who+suggestBox()+rulesBox();
-  return party+msg+dupSelfBox()+approvalBox()+claimBox()+who+bar+alertsRow()+scoreboard()+turnPanel()+commitsPanel()+feed()+suggestBox()+rulesBox()+hostBox();
+  if(game.status==='over')return msg+newBanner()+approvalBox()+claimBox()+winnerBox()+commitsPanel()+party+scoreboard()+feed()+bar+who+suggestBox()+rulesBox();
+  return party+msg+newBanner()+dupSelfBox()+approvalBox()+claimBox()+who+bar+alertsRow()+scoreboard()+turnPanel()+commitsPanel()+feed()+suggestBox()+rulesBox()+hostBox();
 }
 /* When someone fills a category: a gem appears on the scoreboard and everyone watching sees a short celebration.
    Only fires for fills that happen while the page is open (not for old ones when you first load the game). */
@@ -1376,7 +1394,7 @@ function home(){
    Hiding is per device (localStorage); games stay in Firestore. */
 function hiddenSet(){try{return new Set(JSON.parse(lsGet('bm_hidden')||'[]'))}catch(e){return new Set()}}
 function gameCards(list,rank,act,label){
-  return `<div class="players">${list.map(g=>`<div class="pl"><div class="spread"><b>${esc(g.name||'Game')}</b><span class="row" style="gap:6px"><button class="small ${rank(g)===0?'primary':''}" data-act="open" data-arg="${g.id}">Open</button><button class="small" data-act="${act}" data-arg="${g.id}">${label}</button></span></div>
+  return `<div class="players">${list.map(g=>`<div class="pl"><div class="spread"><b>${esc(g.name||'Game')}</b>${actNewGame(g)?' <span class="newdot" title="Something new here">● New</span>':''}<span class="row" style="gap:6px"><button class="small ${rank(g)===0?'primary':''}" data-act="open" data-arg="${g.id}">Open</button><button class="small" data-act="${act}" data-arg="${g.id}">${label}</button></span></div>
   <div class="small muted">${g.players.map(p=>esc(nm(p,g))).join(', ')}</div><div class="small muted">${statusLine(g)}</div></div>`).join('')}</div>`;
 }
 function lobby(){
@@ -1571,7 +1589,7 @@ function commitRow(p,mode){
   const ask=mode==='partner'&&!c.done?`Hi ${nameOf(p.by)}, how’s it going with: ${c.text}?`:'';
   return `<div class="commit"><div class="spread"><span class="answer">${esc(c.text)}${voiceTag(c.voice,nameOf(p.by))}</span>${status}</div>${photoTag(c.photos,nameOf(p.by))}
     <div class="small muted">${who} · by ${esc(fmtDate(c.due))} · ${CATS[p.cat].name}</div>
-    ${ns.length?`<div class="replies" style="margin-top:6px">${ns.map(n=>`<div class="reply small"><b>${esc(nm(n.by))}</b> <span class="muted">${new Date(n.at).toLocaleDateString(undefined,{month:'short',day:'numeric'})}</span><div class="answer">${esc(n.text)}${voiceTag(n.voice,nm(n.by))}</div>${photoTag(n.photos,nm(n.by))}</div>`).join('')}</div>`:''}
+    ${ns.length?`<div class="replies" style="margin-top:6px">${ns.map(n=>`<div class="reply small${isNew(n)?' isnew':''}">${isNew(n)?NEWCHIP:''}<b>${esc(nm(n.by))}</b> <span class="muted">${new Date(n.at).toLocaleDateString(undefined,{month:'short',day:'numeric'})}</span><div class="answer">${esc(n.text)}${voiceTag(n.voice,nm(n.by))}</div>${photoTag(n.photos,nm(n.by))}</div>`).join('')}</div>`:''}
     ${canTalk?`<div class="row" style="margin-top:6px"><input id="n_${p.id}" placeholder="${esc(mode==='partner'?'Send a check-in message':'Send an update or reply')}" style="flex:1;min-width:160px">
       <button class="small" data-act="note" data-arg="${p.id}">Send</button>
       ${ask?`<button class="small" data-act="asknote" data-arg="${p.id}">Ask how it’s going</button>`:''}
@@ -1625,7 +1643,8 @@ async function addNote(postId,preset){
   const f='n_'+postId,vo=preset?null:takeVoice(f),ph=preset?null:takePhotos(f);
   if(!text&&!vo&&!ph){ui.msg='Type a message first.';return}
   const note={by:me,cat:null,idx:null,text:text.slice(0,1000),pts:0,kind:'note',parent:postId,at:Date.now()};if(vo)note.voice=vo;if(ph)note.photos=ph;
-  await POSTS().add(note);
+  const nref=await POSTS().add(note);bumpAct('note');
+  if(PUSH_URL&&!game.practice&&!game.together)pushCall('/notenotify',{post:nref.id}).catch(e=>console.warn('noteping',e));
   if(box)box.value='';if(!preset)clearVoice(f);
 }
 /* Points for someone joining another player's card. Same options as the card, except when the card
@@ -1691,7 +1710,7 @@ function postLine(p){
   <details class="qline"><summary class="small" style="font-family:var(--body);font-weight:500">The card</summary>${esc(t)}</details>
   ${p.text||p.voice?`<div class="answer">${esc(p.text)}${voiceTag(p.voice,nm(p.by))}</div>`:''}${photoTag(p.photos,nm(p.by))}
   ${p.commit?`<div class="small muted">Committed: ${esc(p.commit.text)}${voiceTag(p.commit.voice,nm(p.by))}</div>${photoTag(p.commit.photos,nm(p.by))}`:''}
-  ${reps.length?`<div class="replies">${reps.map(r=>`<div class="reply"><div class="meta"><b>${esc(nm(r.by))}</b> joined in <span>+${r.pts}</span></div>${r.text||r.voice?`<div class="answer">${esc(r.text)}${voiceTag(r.voice,nm(r.by))}</div>`:''}${photoTag(r.photos,nm(r.by))}${r.commit?`<div class="small muted">Committed: ${esc(r.commit.text)}${voiceTag(r.commit.voice,nm(r.by))}</div>${photoTag(r.commit.photos,nm(r.by))}`:''}${reactRow(r)}</div>`).join('')}</div>`:''}
+  ${reps.length?`<div class="replies">${reps.map(r=>`<div class="reply${isNew(r)?' isnew':''}"><div class="meta">${isNew(r)?NEWCHIP:''}<b>${esc(nm(r.by))}</b> joined in <span>+${r.pts}</span></div>${r.text||r.voice?`<div class="answer">${esc(r.text)}${voiceTag(r.voice,nm(r.by))}</div>`:''}${photoTag(r.photos,nm(r.by))}${r.commit?`<div class="small muted">Committed: ${esc(r.commit.text)}${voiceTag(r.commit.voice,nm(r.by))}</div>${photoTag(r.commit.photos,nm(r.by))}`:''}${reactRow(r)}</div>`).join('')}</div>`:''}
   ${reactRow(p)}
   ${canJoin?(ui.joinOpen===p.id?joinPanel(p)
     :`<div class="row"><button class="small" data-act="joinopen" data-arg="${p.id}">Join in on this card</button></div>`):''}</div>`;
@@ -1767,6 +1786,8 @@ document.addEventListener('click',e=>{
   if(a==='sheetprint'){loadFulls().then(()=>setTimeout(()=>{document.body.classList.add('printsheet');window.print();setTimeout(()=>document.body.classList.remove('printsheet'),500)},300));return}
   if(a==='sheetcal'){sheetIcs();return}
   if(a==='home'){openGame(null);return}
+  if(a==='hidenew'){ui.actHide=true;render();return}
+  if(a==='jumpnew'){const el=document.querySelector('.newchip');if(el){let d=el.closest('details');while(d){d.open=true;d=d.parentElement&&d.parentElement.closest('details')}el.scrollIntoView({behavior:'smooth',block:'center'})}return}
   if(a==='open'){openGame(arg);return}
   if(a==='copylink'){copyText(SITE_URL+'#'+gid,'Link copied. Paste it into WhatsApp, Messenger or LINE.','roomlink');return}
   if(a==='share'){const text=`Join me for a game of Better Me! It’s a friendly, free game where we take turns answering cards about Heart, Mind, Body, People and Tangibles, and cheer each other on. No app or sign-up: tap the link and type your first name. (${game.name||'Better Me'})`;
