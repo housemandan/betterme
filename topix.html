@@ -322,32 +322,30 @@ window.openShare=function(o){
  function copyPic(){return(window.ClipboardItem&&navigator.clipboard&&navigator.clipboard.write&&o.image)?navigator.clipboard.write([new ClipboardItem({"image/png":getPng()})]):Promise.reject()}
  if(o.image)getPng().catch(function(){});
  var items=[
-  {n:"Messenger",c:"#0a7cff",l:"M",copyopen:mobile?"https://m.me/":"https://www.messenger.com/",note:"Link copied. Open a chat and paste it. The card picture shows up by itself."},
   {n:"WhatsApp",c:"#25d366",l:"W",href:"https://wa.me/?text="+enc(msg)},
   {n:"Facebook post",c:"#1877f2",l:"f",href:"https://www.facebook.com/sharer/sharer.php?u="+enc(o.url)},
-  {n:"Instagram",c:"#d62976",l:"I",copyopen:mobile?"https://www.instagram.com/direct/inbox/":"https://www.instagram.com/",note:"Link copied. Paste it into a message. The card picture shows up by itself."},
   {n:"Line",c:"#06c755",l:"L",href:"https://line.me/R/msg/text/?"+enc(msg)},
   {n:"Text message",c:"#34c759",l:"S",href:"sms:?&body="+enc(msg)},
   {n:"Email",c:"#6a3f7a",l:"@",href:"mailto:?subject="+enc(o.subject)+"&body="+enc(o.text+"\n\n\""+o.card+"\"\n\n"+o.cta+"\n"+o.url)},
   {n:"Telegram",c:"#2aabee",l:"T",href:"https://t.me/share/url?url="+enc(o.url)+"&text="+enc(o.text)},
   {n:"Copy link",c:"#8a7f95",l:"🔗",act:"link"},
   {n:"Copy card for email",c:"#c2378a",l:"✉",act:"rich"},
-  {n:"Signal",c:"#3a76f0",l:"S",act:"link",note:"Link copied. Open Signal and paste it."},
   {n:"Viber",c:"#7360f2",l:"V",href:"viber://forward?text="+enc(msg)},
   {n:"X (Twitter)",c:"#111",l:"X",href:"https://twitter.com/intent/tweet?text="+enc(o.text)+"&url="+enc(o.url)},
   {n:"LinkedIn",c:"#0a66c2",l:"in",href:"https://www.linkedin.com/sharing/share-offsite/?url="+enc(o.url)},
   {n:"Reddit",c:"#ff4500",l:"R",href:"https://www.reddit.com/submit?url="+enc(o.url)+"&title="+enc(o.text)}
  ];
  var d=document.createElement("div");d.id="shx";
- d.innerHTML='<div><button class="x" aria-label="Close">✕</button><h3>Send this card</h3><div class="g">'+(o.image&&mobile&&navigator.share?'<button class="b w" data-nat="1" style="background:#c2378a;color:#fff"><i style="background:#fff;color:#c2378a">&#10148;</i>Send picture + link (best)</button>':'')+items.map(function(it,i){
+ d.innerHTML='<div><button class="x" aria-label="Close">✕</button><h3>Send this card</h3><div class="g">'+(o.image?'<button class="b w" data-cp="1" style="background:#c2378a;color:#fff"><i style="background:#fff;color:#c2378a">&#10064;</i>Copy this card (then paste it anywhere)</button>':'')+(o.image&&mobile&&navigator.share?'<button class="b w" data-nat="1" style="background:#f5f1f8"><i style="background:#c2378a">&#10148;</i>Share from my phone (picture + link)</button>':'')+items.map(function(it,i){
   var inner='<i style="background:'+it.c+'">'+it.l+'</i>'+it.n;
   return it.href?'<a class="b" data-i="'+i+'" href="'+it.href.replace(/"/g,"&quot;")+'" target="_blank" rel="noopener">'+inner+'</a>':'<button class="b" data-i="'+i+'">'+inner+'</button>';
  }).join("")+
- '</div><p class="n">Instagram, Messenger and Signal can\'t be filled in for you, so the link is copied for you to paste. Scroll for more.</p></div>';
+ '</div><p class="n">Tip: the card picture has bettermegame.com on it. After copying, just paste it into a message. Scroll for more apps.</p></div>';
  document.body.appendChild(d);
  function close(){d.remove()}
  d.onclick=function(e){
   if(e.target===d||e.target.classList.contains("x")){close();return}
+  if(e.target.closest("[data-cp]")){copyPic().then(function(){toast("Card copied. Paste it into any message.");close()},function(){window.open(o.image,"_blank")});return}
   var nb=e.target.closest("[data-nat]");
   if(nb){getPng().then(function(bl){var f=new File([bl],"love-bomb.png",{type:"image/png"});
     if(navigator.canShare&&navigator.canShare({files:[f]})){navigator.share({files:[f],text:msg}).then(close,function(){})}
