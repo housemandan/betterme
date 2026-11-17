@@ -276,7 +276,7 @@ window.openShare=function(o){
  if(!document.getElementById("shx-css")){var st=document.createElement("style");st.id="shx-css";st.textContent=css;document.head.appendChild(st)}
  var msg=o.text+" "+o.url;
  var items=[
-  {n:"Messenger",c:"#0a7cff",l:"M",href:mobile?"fb-messenger://share/?link="+enc(o.url):null,copyopen:mobile?null:"https://www.messenger.com/",note:"Link copied. Paste it into a Messenger chat."},
+  {n:"Messenger",c:"#0a7cff",l:"M",copyopen:mobile?"fb-messenger://share/?link="+enc(o.url):"https://www.messenger.com/",note:"Link copied. If the message is empty, just paste it."},
   {n:"WhatsApp",c:"#25d366",l:"W",href:"https://wa.me/?text="+enc(msg)},
   {n:"Facebook post",c:"#1877f2",l:"f",href:"https://www.facebook.com/sharer/sharer.php?u="+enc(o.url)},
   {n:"Instagram",c:"#d62976",l:"I",copyopen:mobile?"https://www.instagram.com/direct/inbox/":"https://www.instagram.com/",note:"Link copied. Paste it into an Instagram message."},
@@ -305,7 +305,7 @@ window.openShare=function(o){
   var b=e.target.closest("[data-i]");if(!b)return;var k=b.dataset.i;
   var it=items[+k];
   if(it.href){setTimeout(close,300);return}
-  if(it.copyopen){copy(o.url).then(function(){toast(it.note)},function(){prompt("Copy this link:",o.url)});window.open(it.copyopen,"_blank");close();return}
+  if(it.copyopen){copy(o.url).then(function(){toast(it.note)},function(){prompt("Copy this link:",o.url)});(/^https?:/.test(it.copyopen)?window.open(it.copyopen,"_blank"):(location.href=it.copyopen));close();return}
   if(it.act==="link"){copy(msg).then(function(){toast(it.note||"Link copied");close()},function(){prompt("Copy this link:",o.url)})}
   if(it.act==="rich"){
    var html=richCard(o),plain=o.text+"\n\n\""+o.card+"\"\n\n"+o.cta+"\n"+o.url;
