@@ -149,17 +149,7 @@ $("sheet").onclick=e=>{if(e.target===$("sheet"))$("sheet").classList.add("hide")
 function link(id){return base+"#c="+id}
 function shareText(c){return "A Love Bomb for you: \""+c.q+"\""}
 $("share").onclick=()=>shareCard(current);
-function shareCard(id){
- const c=byId[id],u=link(id),t=shareText(c);
- if(navigator.share){navigator.share({title:"Love Bombs",text:t,url:u}).catch(()=>{});return}
- openSheet(`<h3>Send this Love Bomb</h3>
- <a class="sbtn wa" href="https://wa.me/?text=${encodeURIComponent(t+" "+u)}" target="_blank" rel="noopener">💬 WhatsApp</a>
- <a class="sbtn ms" href="https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(u)}" target="_blank" rel="noopener">Ⓜ Facebook / Messenger</a>
- <a class="sbtn" href="sms:?&body=${encodeURIComponent(t+" "+u)}">✉ Text message</a>
- <a class="sbtn" href="mailto:?subject=${encodeURIComponent("A Love Bomb for you")}&body=${encodeURIComponent(t+"\n\n"+u)}">📧 Email</a>
- <button class="sbtn" id="cp">🔗 Copy link</button>`);
- $("cp").onclick=()=>{(navigator.clipboard?navigator.clipboard.writeText(t+" "+u):Promise.reject()).then(()=>{toast("Link copied");$("sheet").classList.add("hide")}).catch(()=>prompt("Copy this link:",u))};
-}
+function shareCard(id){const c=byId[id];openShare({url:"https://bettermegame.com/lb/"+id+".html",text:"A Love Bomb for you:",subject:"A Love Bomb for you",card:c.q,cta:"Send a Love Bomb, totally free, no sign-up",brand:"love bombs"})}
 const SHI='<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V3"/><path d="M8 7l4-4 4 4"/><path d="M7 10H6a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7a2 2 0 0 0-2-2h-1"/></svg>';
 function showSaved(){
  if(!S.hearts.length){openSheet("<h3>♥ Saved cards</h3><p>Nothing saved yet. Tap the ♥ on any card to keep it here.</p>");return}
@@ -248,6 +238,70 @@ function openSuggest(game){
  };
 }
 window.openSuggest=openSuggest;
+})();
+/* Shared "send this card" sheet for the static pages (Topix, Love Bombs). Inserted by their build scripts (with suggest_static.js).
+   openShare({url, text, subject, card, cta, brand}) :
+     url = link to send, text = message that goes before the link, subject = email subject,
+     card = the card wording (for the pretty "copy card for email"), cta = line after the card, brand = small title on the card.
+   Order (Dan, 2026-11-17): Messenger, WhatsApp, Instagram, Facebook, Line, Telegram, text message, email, copy link, copy card for email, More apps.
+   Signal and other apps have no web share link: they are under "More apps" (the phone's own share list). */
+(function(){
+var mobile=/Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+var css="#shx{position:fixed;inset:0;background:rgba(20,10,30,.55);display:flex;align-items:flex-end;justify-content:center;z-index:50;font-family:inherit}"+
+"#shx>div{background:#fff;color:#2b2b3a;width:100%;max-width:560px;border-radius:24px 24px 0 0;padding:20px 18px calc(22px + env(safe-area-inset-bottom));max-height:90vh;overflow:auto;font-weight:400}"+
+"#shx h3{font-weight:600;margin-bottom:10px}#shx .g{display:grid;grid-template-columns:1fr 1fr;gap:8px}"+
+"#shx .b{display:flex;align-items:center;gap:10px;padding:13px 12px;border-radius:14px;background:#f5f1f8;font:inherit;font-weight:500;text-align:left;border:0;color:inherit;text-decoration:none;cursor:pointer}"+
+"#shx .b i{font-style:normal;width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-size:.8rem;font-weight:700;flex:none}"+
+"#shx .w{grid-column:1/3}#shx .n{font-size:.8rem;color:#6d6478;margin-top:10px}#shx .x{float:right;border:0;background:none;font-size:1.3rem;cursor:pointer;color:inherit}";
+function enc(s){return encodeURIComponent(s)}
+function toast(m){var t=document.createElement("div");t.className="toast";t.textContent=m;t.style.cssText="position:fixed;left:50%;bottom:90px;transform:translateX(-50%);background:#2b2b3a;color:#fff;padding:10px 18px;border-radius:99px;font-size:.9rem;z-index:60";document.body.appendChild(t);setTimeout(function(){t.remove()},2600)}
+function copy(txt){return navigator.clipboard?navigator.clipboard.writeText(txt):Promise.reject()}
+function esc(s){return String(s).replace(/[&<>"]/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]})}
+function richCard(o){
+ return '<div style="max-width:480px;margin:0 auto;font-family:Georgia,serif;text-align:center"><a href="'+esc(o.url)+'" style="text-decoration:none;color:#2b2b3a;display:block;background:#c2378a;padding:22px;border-radius:18px">'+
+ '<div style="background:#ffffff;border-radius:14px;padding:30px 22px"><div style="font-size:12px;letter-spacing:4px;color:#b3a9bd;text-transform:uppercase;margin-bottom:14px">'+esc(o.brand)+'</div>'+
+ '<div style="font-size:24px;line-height:1.35">'+esc(o.card)+'</div></div></a>'+
+ '<p style="font-family:Arial,sans-serif;font-size:15px;margin:14px 0 0"><a href="'+esc(o.url)+'" style="color:#c2378a;font-weight:bold">'+esc(o.cta)+'</a></p></div>';
+}
+window.openShare=function(o){
+ if(!document.getElementById("shx-css")){var st=document.createElement("style");st.id="shx-css";st.textContent=css;document.head.appendChild(st)}
+ var msg=o.text+" "+o.url;
+ var items=[
+  {n:"Messenger",c:"#0a7cff",l:"M",href:mobile?"fb-messenger://share/?link="+enc(o.url):null,copyopen:mobile?null:"https://www.messenger.com/",note:"Link copied. Paste it into a Messenger chat."},
+  {n:"WhatsApp",c:"#25d366",l:"W",href:"https://wa.me/?text="+enc(msg)},
+  {n:"Instagram",c:"#d62976",l:"I",copyopen:mobile?"https://www.instagram.com/direct/inbox/":"https://www.instagram.com/",note:"Link copied. Paste it into an Instagram message."},
+  {n:"Facebook",c:"#1877f2",l:"f",href:"https://www.facebook.com/sharer/sharer.php?u="+enc(o.url)},
+  {n:"Line",c:"#06c755",l:"L",href:"https://line.me/R/msg/text/?"+enc(msg)},
+  {n:"Telegram",c:"#2aabee",l:"T",href:"https://t.me/share/url?url="+enc(o.url)+"&text="+enc(o.text)},
+  {n:"Text message",c:"#34c759",l:"S",href:"sms:?&body="+enc(msg)},
+  {n:"Email",c:"#6a3f7a",l:"@",href:"mailto:?subject="+enc(o.subject)+"&body="+enc(o.text+"\n\n\""+o.card+"\"\n\n"+o.cta+"\n"+o.url)},
+  {n:"Copy link",c:"#8a7f95",l:"🔗",act:"link"},
+  {n:"Copy card for email",c:"#c2378a",l:"✉",act:"rich"}
+ ];
+ var d=document.createElement("div");d.id="shx";
+ d.innerHTML='<div><button class="x" aria-label="Close">✕</button><h3>Send this card</h3><div class="g">'+items.map(function(it,i){
+  var inner='<i style="background:'+it.c+'">'+it.l+'</i>'+it.n;
+  return it.href?'<a class="b" data-i="'+i+'" href="'+it.href.replace(/"/g,"&quot;")+'" target="_blank" rel="noopener">'+inner+'</a>':'<button class="b" data-i="'+i+'">'+inner+'</button>';
+ }).join("")+(navigator.share?'<button class="b w" data-i="more"><i style="background:#2b2b3a">…</i>More apps (Signal and others)</button>':'')+
+ '</div><p class="n">Instagram and Messenger on a computer can\'t be filled in for you, so the link is copied for you to paste.</p></div>';
+ document.body.appendChild(d);
+ function close(){d.remove()}
+ d.onclick=function(e){
+  if(e.target===d||e.target.classList.contains("x")){close();return}
+  var b=e.target.closest("[data-i]");if(!b)return;var k=b.dataset.i;
+  if(k==="more"){navigator.share({title:o.brand,text:o.text,url:o.url}).catch(function(){});close();return}
+  var it=items[+k];
+  if(it.href){setTimeout(close,300);return}
+  if(it.copyopen){copy(o.url).then(function(){toast(it.note)},function(){prompt("Copy this link:",o.url)});window.open(it.copyopen,"_blank");close();return}
+  if(it.act==="link"){copy(msg).then(function(){toast("Link copied");close()},function(){prompt("Copy this link:",o.url)})}
+  if(it.act==="rich"){
+   var html=richCard(o),plain=o.text+"\n\n\""+o.card+"\"\n\n"+o.cta+"\n"+o.url;
+   if(window.ClipboardItem&&navigator.clipboard&&navigator.clipboard.write){
+    navigator.clipboard.write([new ClipboardItem({"text/html":new Blob([html],{type:"text/html"}),"text/plain":new Blob([plain],{type:"text/plain"})})]).then(function(){toast("Card copied. Paste it into your email.");close()},function(){toast("Could not copy the card. Use Email instead.")})
+   }else toast("This browser can't copy the card. Use Email instead.");
+  }
+ };
+};
 })();
 
 </script>
