@@ -53,7 +53,10 @@ button{font:inherit;cursor:pointer;border:0;background:none;color:inherit}
 .go{display:block;width:100%;margin-top:16px;padding:16px;border-radius:16px;background:linear-gradient(120deg,var(--orange),var(--pink));color:#fff;font-weight:600;font-size:1.15rem;letter-spacing:.02em;box-shadow:0 8px 20px rgba(194,55,138,.35)}
 .links{display:flex;justify-content:center;gap:22px;margin-top:18px;font-weight:400;font-size:.95rem}
 .links a,.links button{color:#6a3f7a;text-decoration:underline}
-.foot{font-size:.76rem;color:#8a7f95;text-align:center;margin-top:20px;padding:0 10px}
+.foot{font-size:.8rem;color:#fff;text-align:center;margin-top:20px;padding:0 10px;text-shadow:0 1px 3px rgba(0,0,0,.35)}
+.support{display:inline-block;background:#fff;color:#8a2a6b;font-weight:600;padding:10px 20px;border-radius:99px;text-decoration:none;margin-bottom:12px;text-shadow:none;box-shadow:0 4px 14px rgba(0,0,0,.2)}
+.homelink{position:absolute;top:calc(10px + env(safe-area-inset-top));left:14px;color:#fff;text-decoration:none;font-weight:500;font-size:.9rem;padding:8px 6px;text-shadow:0 1px 3px rgba(0,0,0,.35)}
+.hero{position:relative}
 /* PLAY */
 #play{position:fixed;inset:0;display:flex;flex-direction:column;color:#fff;padding:calc(10px + env(safe-area-inset-top)) 16px calc(14px + env(safe-area-inset-bottom))}
 .top{display:flex;justify-content:space-between;align-items:center;font-size:.85rem;letter-spacing:.12em;text-transform:uppercase;font-weight:500}
@@ -89,7 +92,7 @@ button{font:inherit;cursor:pointer;border:0;background:none;color:inherit}
 </head>
 <body>
 <div id="home" class="wash">
- <div class="hero"><div class="logo">love bombs</div><div class="tag">KINDNESS CARDS</div></div>
+ <div class="hero"><a class="homelink" href="index.html">‹ bettermegame.com</a><div class="logo">love bombs</div><div class="tag">KINDNESS CARDS</div></div>
  <div class="wrap">
   <div class="panel">
    <p class="lead big">Make someone feel appreciated. It is one of the kindest things you can do.</p>
@@ -100,7 +103,7 @@ button{font:inherit;cursor:pointer;border:0;background:none;color:inherit}
    <button class="go" id="go">Draw a Love Bomb</button>
    <div class="links"><button id="showSaved">♥ Saved (<span id="sc">0</span>)</button><button id="sug">Suggest an idea</button><a href="index.html">Better Me games</a></div>
   </div>
-  <p class="foot"><a href="https://www.paypal.com/ncp/payment/HYCNE977CKAAA" target="_blank" rel="noopener" style="color:inherit;font-weight:600">♥ Enjoying the free games? Support them</a><br>Free, no sign-up. Your saved cards stay on this device. Love Bombs kindness cards are a physical card set from the makers of Better Me.</p>
+  <p class="foot"><a class="support" href="https://www.paypal.com/ncp/payment/HYCNE977CKAAA" target="_blank" rel="noopener">♥ Enjoying the free games? Support them</a><br>Free, no sign-up. Your saved cards stay on this device. Love Bombs kindness cards are a physical card set from the makers of Better Me.</p>
  </div>
 </div>
 <div id="play" class="hide">
