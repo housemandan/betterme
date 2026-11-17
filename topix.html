@@ -292,7 +292,7 @@ window.openSuggest=openSuggest;
      url = link to send, text = message that goes before the link, subject = email subject,
      card = the card wording (for the pretty "copy card for email"), cta = line after the card, brand = small title on the card.
    Order (Dan, 2026-11-17): Messenger, WhatsApp, Instagram, Facebook, Line, Telegram, text message, email, copy link, copy card for email, More apps.
-   Signal and other apps have no web share link: they are under "More apps" (the phone's own share list). */
+   Signal, Instagram and desktop Messenger have no web share link: they copy the link for pasting. Scroll for the less common apps. */
 (function(){
 var mobile=/Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
 var css="#shx{position:fixed;inset:0;background:rgba(20,10,30,.55);display:flex;align-items:flex-end;justify-content:center;z-index:50;font-family:inherit}"+
@@ -317,31 +317,35 @@ window.openShare=function(o){
  var items=[
   {n:"Messenger",c:"#0a7cff",l:"M",href:mobile?"fb-messenger://share/?link="+enc(o.url):null,copyopen:mobile?null:"https://www.messenger.com/",note:"Link copied. Paste it into a Messenger chat."},
   {n:"WhatsApp",c:"#25d366",l:"W",href:"https://wa.me/?text="+enc(msg)},
+  {n:"Facebook post",c:"#1877f2",l:"f",href:"https://www.facebook.com/sharer/sharer.php?u="+enc(o.url)},
   {n:"Instagram",c:"#d62976",l:"I",copyopen:mobile?"https://www.instagram.com/direct/inbox/":"https://www.instagram.com/",note:"Link copied. Paste it into an Instagram message."},
-  {n:"Facebook",c:"#1877f2",l:"f",href:"https://www.facebook.com/sharer/sharer.php?u="+enc(o.url)},
   {n:"Line",c:"#06c755",l:"L",href:"https://line.me/R/msg/text/?"+enc(msg)},
-  {n:"Telegram",c:"#2aabee",l:"T",href:"https://t.me/share/url?url="+enc(o.url)+"&text="+enc(o.text)},
   {n:"Text message",c:"#34c759",l:"S",href:"sms:?&body="+enc(msg)},
   {n:"Email",c:"#6a3f7a",l:"@",href:"mailto:?subject="+enc(o.subject)+"&body="+enc(o.text+"\n\n\""+o.card+"\"\n\n"+o.cta+"\n"+o.url)},
+  {n:"Telegram",c:"#2aabee",l:"T",href:"https://t.me/share/url?url="+enc(o.url)+"&text="+enc(o.text)},
   {n:"Copy link",c:"#8a7f95",l:"🔗",act:"link"},
-  {n:"Copy card for email",c:"#c2378a",l:"✉",act:"rich"}
+  {n:"Copy card for email",c:"#c2378a",l:"✉",act:"rich"},
+  {n:"Signal",c:"#3a76f0",l:"S",act:"link",note:"Link copied. Open Signal and paste it."},
+  {n:"Viber",c:"#7360f2",l:"V",href:"viber://forward?text="+enc(msg)},
+  {n:"X (Twitter)",c:"#111",l:"X",href:"https://twitter.com/intent/tweet?text="+enc(o.text)+"&url="+enc(o.url)},
+  {n:"LinkedIn",c:"#0a66c2",l:"in",href:"https://www.linkedin.com/sharing/share-offsite/?url="+enc(o.url)},
+  {n:"Reddit",c:"#ff4500",l:"R",href:"https://www.reddit.com/submit?url="+enc(o.url)+"&title="+enc(o.text)}
  ];
  var d=document.createElement("div");d.id="shx";
  d.innerHTML='<div><button class="x" aria-label="Close">✕</button><h3>Send this card</h3><div class="g">'+items.map(function(it,i){
   var inner='<i style="background:'+it.c+'">'+it.l+'</i>'+it.n;
   return it.href?'<a class="b" data-i="'+i+'" href="'+it.href.replace(/"/g,"&quot;")+'" target="_blank" rel="noopener">'+inner+'</a>':'<button class="b" data-i="'+i+'">'+inner+'</button>';
- }).join("")+(navigator.share?'<button class="b w" data-i="more"><i style="background:#2b2b3a">…</i>More apps (Signal and others)</button>':'')+
- '</div><p class="n">Instagram and Messenger on a computer can\'t be filled in for you, so the link is copied for you to paste.</p></div>';
+ }).join("")+
+ '</div><p class="n">Instagram, Messenger and Signal can\'t be filled in for you, so the link is copied for you to paste. Scroll for more.</p></div>';
  document.body.appendChild(d);
  function close(){d.remove()}
  d.onclick=function(e){
   if(e.target===d||e.target.classList.contains("x")){close();return}
   var b=e.target.closest("[data-i]");if(!b)return;var k=b.dataset.i;
-  if(k==="more"){navigator.share({title:o.brand,text:o.text,url:o.url}).catch(function(){});close();return}
   var it=items[+k];
   if(it.href){setTimeout(close,300);return}
   if(it.copyopen){copy(o.url).then(function(){toast(it.note)},function(){prompt("Copy this link:",o.url)});window.open(it.copyopen,"_blank");close();return}
-  if(it.act==="link"){copy(msg).then(function(){toast("Link copied");close()},function(){prompt("Copy this link:",o.url)})}
+  if(it.act==="link"){copy(msg).then(function(){toast(it.note||"Link copied");close()},function(){prompt("Copy this link:",o.url)})}
   if(it.act==="rich"){
    var html=richCard(o),plain=o.text+"\n\n\""+o.card+"\"\n\n"+o.cta+"\n"+o.url;
    if(window.ClipboardItem&&navigator.clipboard&&navigator.clipboard.write){
