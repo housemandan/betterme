@@ -200,7 +200,7 @@ $("sheet").onclick=e=>{if(e.target===$("sheet"))$("sheet").classList.add("hide")
 function link(id){return base+"#c="+id}
 function shareText(c){return "Here's a good one from Topix: \""+c.q+"\""}
 $("share").onclick=()=>shareCard(current);
-function shareCard(id){const c=byId[id];openShare({url:link(id),text:"Here's a good one from Topix:",subject:"A Topix question",card:c.q,cta:"Play Topix, free, no sign-up",brand:"topix"})}
+function shareCard(id){const c=byId[id];openShare({url:"https://bettermegame.com/tx/"+id+".html",image:"tx/"+id+".jpg",text:"Here's a good one from Topix:",subject:"A Topix question",card:c.q,cta:"Play Topix, free, no sign-up",brand:"topix"})}
 function showSaved(){
  if(!S.hearts.length){openSheet("<h3>♥ Saved cards</h3><p>Nothing saved yet. Tap the ♥ on any card to keep it here.</p>");return}
  openSheet("<h3>♥ Saved cards</h3>"+S.hearts.slice().reverse().map(id=>byId[id]?`<div class="saved"><p>${byId[id].q.replace(/</g,"&lt;")}</p><button data-s="${id}" aria-label="Share"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V3"/><path d="M8 7l4-4 4 4"/><path d="M7 10H6a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7a2 2 0 0 0-2-2h-1"/></svg></button><button data-u="${id}" aria-label="Remove">✕</button></div>`:"").join(""));
