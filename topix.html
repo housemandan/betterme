@@ -101,10 +101,9 @@ button{font:inherit;cursor:pointer;border:0;background:none;color:inherit}
    <h2 style="margin-top:18px">2. Mood (optional)</h2>
    <div class="chips" id="moods"></div>
    <div class="row" style="margin-top:16px"><div><b style="font-weight:600">Family-friendly (PG)</b><div class="note">Hides a few edgier questions. Good for kids and grandparents at the table.</div></div><button class="sw on" id="pg" aria-label="Family-friendly"></button></div>
-   <h2 style="margin-top:18px">3. Who's playing? (optional)</h2>
-   <div class="note" style="margin:-4px 0 4px">Add names and the phone shows whose turn it is. Pass it around!</div>
-   <div class="names"><input id="nm" maxlength="20" placeholder="Add a name" autocomplete="off"><button class="add" id="addn">Add</button></div>
-   <div class="chips" id="players" style="margin-top:10px"></div>
+   <!-- "Who's playing" hidden 2026-11-18 (Dan: you're in the room, just pass it). Code kept so it can come back. -->
+   <div style="display:none"><div class="names"><input id="nm" maxlength="20" autocomplete="off"><button class="add" id="addn">Add</button></div>
+   <div class="chips" id="players"></div></div>
    <button class="go" id="go">Start</button>
    <div class="links"><button id="showSaved">♥ Saved (<span id="sc">0</span>)</button><button id="sug">Suggest an idea</button><a href="index.html">Better Me games</a></div>
   </div>
@@ -136,7 +135,7 @@ const BG={main:"linear-gradient(160deg,#e8965a,#c2378a)",couples:"linear-gradien
 const $=id=>document.getElementById(id);
 const store={get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
 const byId={};CARDS.forEach(c=>byId[c.id]=c);
-let S={deck:store.get("tx_deck","main"),mood:store.get("tx_mood","all"),pg:store.get("tx_pg",true),players:store.get("tx_players",[]),hearts:store.get("tx_hearts",[])};
+let S={deck:store.get("tx_deck","main"),mood:store.get("tx_mood","all"),pg:store.get("tx_pg",true),players:[],hearts:store.get("tx_hearts",[])};
 let order=[],pos=0,turn=0,history=[];
 const base=location.origin+location.pathname;
 
