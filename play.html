@@ -217,6 +217,25 @@ details ol,details ul{margin:.4em 0;padding-left:1.3em}
 .recdot{width:12px;height:12px;border-radius:50%;background:#e0605a;flex:none}
 @media (prefers-reduced-motion:no-preference){.recdot{animation:recpulse 1s ease-in-out infinite}@keyframes recpulse{50%{opacity:.3}}}
 @media print{#chatdock{display:none}}
+/* Card comments, @tags and the bell. */
+.comments{display:flex;flex-direction:column;gap:6px;border-top:1px dashed var(--line);padding-top:8px}
+.cmt{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:6px 10px;display:flex;flex-direction:column;gap:2px}
+.cmt.isnew{border-color:#2f6fe4}
+.cmt button.react{font-size:.8rem;min-height:24px;padding:0 6px;margin-left:auto}
+.mention{color:#2f6fe4;font-weight:700}
+.mention.me{background:#2f6fe426;border-radius:6px;padding:0 3px}
+.tagrow{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:4px;flex-basis:100%}
+.chatbox .tagrow{flex:none;margin:0;padding:6px 10px 0}
+#belldock{position:fixed;left:16px;bottom:16px;z-index:51}
+.bellbtn{background:var(--surface);color:var(--fg);border:1px solid var(--line);border-radius:999px;padding:9px 13px;font-size:1.05rem;box-shadow:0 4px 14px rgba(30,24,56,.25);cursor:pointer}
+.bellbtn.on{border-color:#2f6fe4}
+.bellbox{width:min(360px,calc(100vw - 32px));max-height:min(460px,70vh);display:flex;flex-direction:column;background:var(--surface);color:var(--fg);border:1px solid var(--line);border-radius:14px;box-shadow:0 10px 30px rgba(30,24,56,.3);overflow:hidden}
+#belllist{overflow-y:auto;display:flex;flex-direction:column}
+button.bellitem{display:block;text-align:left;background:none;color:var(--fg);border:0;border-top:1px solid var(--line);border-radius:0;padding:9px 12px;font-weight:400;box-shadow:none;cursor:pointer;width:100%}
+button.bellitem.new{background:#2f6fe41f}
+.bellsnip{display:block;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.flash{outline:3px solid #2f6fe4;outline-offset:2px}
+@media print{#belldock{display:none}}
 /* Voice player bar (top of screen) and photos. */
 #vpbar{position:fixed;left:0;right:0;top:0;z-index:60;display:flex;justify-content:center;padding:8px 12px;pointer-events:none}
 .vpin{pointer-events:auto;width:100%;max-width:620px;background:var(--surface);color:var(--fg);border:1px solid var(--line);border-radius:14px;box-shadow:0 6px 20px rgba(30,24,56,.25);padding:8px 12px;display:grid;gap:6px}
@@ -275,7 +294,7 @@ const OFFLINE={"M": [0, 1, 4, 10, 11, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42
 /* PTS[deck][i] = [sharing pts, commitment pts, other option label, other option pts, most points allowed] */
 const PTS={"M":[[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[0,2,"I already use a visible affirmation",2,2],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[0,1,"I already use a vision board",1,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,1,"",0,2],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,2,"",0,3],[0,2,"",0,2],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[0,1,"",0,1],[1,0,"",0,1],[1,1,"",0,2],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1]],"T":[[1,1,"",0,2],[1,1,"",0,2],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,1,"",0,2],[0,1,"I shared a rewarding time I gave time or money",1,2],[1,0,"",0,1],[1,1,"",0,2],[1,1,"",0,2],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[0,1,"",0,1],[0,1,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,1,"",0,2],[1,0,"",0,1],[0,1,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,1,"",0,2],[1,1,"",0,2],[1,0,"",0,1],[0,1,"",0,1],[1,0,"",0,1],[1,1,"",0,2],[1,0,"",0,1],[1,1,"",0,2],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[0,1,"",0,1],[1,1,"",0,2],[1,0,"",0,1],[1,0,"",0,1],[0,1,"I already have written goals",1,1],[1,0,"",0,1],[1,1,"",0,2],[1,1,"",0,2],[1,1,"",0,2]],"B":[[1,0,"",0,1],[1,0,"",0,1],[0,1,"I already read food labels",1,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[0,1,"I’m usually well rested",1,1],[0,1,"I already drink plenty of water",1,2],[1,0,"",0,1],[1,1,"",0,2],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[0,1,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,1,"",0,2],[1,0,"",0,1],[1,1,"",0,2],[1,1,"",0,2],[1,1,"",0,2],[1,0,"",0,1],[1,0,"I’m a doctor, nurse, scientist or inventor",1,2],[1,1,"",0,2],[1,1,"",0,2],[0,1,"",0,1],[1,0,"",0,1],[1,1,"",0,2],[1,1,"",0,2],[1,0,"",0,1],[1,1,"",0,2],[0,1,"",0,1],[1,1,"",0,2],[0,1,"I think my current habits will get me there",1,1],[1,1,"",0,2],[1,1,"",0,2],[1,1,"",0,2],[1,0,"",0,1],[1,1,"",0,2]],"H":[[1,0,"",0,1],[1,2,"",0,3],[0,1,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[0,2,"",0,2],[0,2,"",0,2],[1,1,"",0,2],[1,0,"",0,1],[1,1,"",0,2],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,1,"",0,2],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[0,2,"I’ve volunteered in the last 3 months",1,3],[1,1,"",0,2],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,1,"",0,2],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,1,"",0,2],[1,0,"",0,1]],"P":[[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,2,"",0,3],[1,0,"",0,1],[0,1,"",0,1],[1,1,"",0,2],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[0,1,"",0,1],[1,1,"",0,2],[1,1,"",0,2],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,1,"",0,2],[1,0,"",0,1],[1,1,"",0,2],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[0,2,"I answered “yes” (I’m a good listener)",1,2],[1,0,"",0,1],[0,2,"",0,2],[1,0,"",0,1],[1,0,"",0,1],[1,1,"",0,2],[0,1,"I have nothing borrowed to return",1,1],[0,1,"I can’t think of an unfulfilled promise",1,1],[0,1,"",0,1],[1,1,"",0,2],[0,1,"",0,1],[0,1,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,1,"",0,2],[1,1,"",0,2],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,1,"",0,2],[1,1,"",0,2],[1,0,"",0,1],[1,1,"",0,2],[0,1,"I told a joke now",1,1],[1,1,"",0,2],[1,1,"",0,2],[1,1,"",0,2]],"FF":[[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1],[1,0,"",0,1]]};
 
-const BUILD='7cbc741a2f';
+const BUILD='5dcd9d63f1';
 
 /* ============ QUICK PLAY (bettermegame.com) ============ */
 /* Firebase web config: these values are public by design (they identify the project, they are not passwords). */
@@ -379,7 +398,7 @@ function route(){
   const h=(location.hash||'').replace(/^#/,'');
   const next=/^[a-z0-9]{8,20}$/.test(h)?h:null;
   if(next===gid&&(unGame||!next)){render();return}
-  gid=next;game=null;me=AUTH;posts=[];postsReady=false;seenFull=null;seenPosts=null;party=null;ui.joinOpen=null;ui.commitOpen=false;ui.pts=1;ui.msg='';ui.actHide=false;ui.actBase=gid?(actSeen(gid)||Date.now()):0;
+  gid=next;game=null;me=AUTH;posts=[];postsReady=false;seenFull=null;seenPosts=null;party=null;ui.joinOpen=null;ui.cmOpen=null;ui.cmAll={};ui.bellOpen=false;ui.commitOpen=false;ui.pts=1;ui.msg='';ui.actHide=false;ui.actBase=gid?(actSeen(gid)||Date.now()):0;
   if(unGame)unGame();if(unPosts)unPosts();unGame=unPosts=null;stopChat();
   if(gid){
     unGame=fs.collection('games').doc(gid).onSnapshot(s=>{const before=game;game=s.exists?Object.assign({id:s.id},s.data()):false;me=game?seatOf(game):AUTH;if(game){rememberGame(gid);loadWatched();actMark()}render();maybeBot();syncChat();noteViewer();roundsCheck();autoJoinNext();
@@ -557,7 +576,7 @@ function alertsRow(){
    Any answer or commitment box gets a "🎤 Say it" button. The recording is saved (games/{id}/audio, same as chat
    voice messages) and typed out by the free Whisper model on our Cloudflare Worker, straight into the box,
    where the player can fix any wrong words. The post keeps both: the text (for reading and the game sheet) and a ▶ play button. */
-const VOICE_SEL='#ans,#c_text,#jc_text,textarea[id^="j_"],input[id^="n_"]';const MAX_CLIPS=5; /* up to 5 one-minute clips per box */
+const VOICE_SEL='#ans,#c_text,#jc_text,textarea[id^="j_"],textarea[id^="cm_"],input[id^="n_"]';const MAX_CLIPS=5; /* up to 5 one-minute clips per box */
 ui.voice={};let vRec=null;
 function voiceOK(){return !!(PUSH_URL&&canRecord()&&game&&gid&&game.players&&game.players.includes(me))}
 function applyVoice(){
@@ -802,7 +821,7 @@ function stopChat(){if(unChat)unChat();unChat=null;chat=[];ui.chatOpen=false;ren
 function syncChat(){
   if(!chatOK()){if(unChat)stopChat();else renderChat();return}
   if(!unChat)unChat=fs.collection('games').doc(gid).collection('chat').orderBy('at','asc').limitToLast(200)
-    .onSnapshot(s=>{chat=s.docs.map(d=>Object.assign({id:d.id},d.data()));if(ui.chatOpen)chatMarkRead();renderChat()},
+    .onSnapshot(s=>{chat=s.docs.map(d=>Object.assign({id:d.id},d.data()));if(ui.chatOpen)chatMarkRead();renderChat();renderBell()},
       /* Right after joining, the server may not know you're a player yet: wait a moment and try again. */
       e=>{console.warn('chat retry',e&&e.code);unChat=null;const g=gid;setTimeout(()=>{if(gid===g)syncChat()},3000)});
   renderChat();
@@ -827,6 +846,7 @@ async function toggleChatReact(arg){
   ui.chatPick=null;
 }
 function renderChat(){
+  const bd=$('#belldock');if(bd)bd.hidden=!!ui.chatOpen;
   let dock=$('#chatdock');
   if(!chatOK()){if(dock)dock.remove();return}
   if(!dock){dock=document.createElement('div');dock.id='chatdock';document.body.appendChild(dock)}
@@ -838,11 +858,11 @@ function renderChat(){
     <div id="chatlist">${chat.length?chat.map(m=>`<div class="chatmsg ${m.by===me?'mine':''}"><div class="chatmeta">${m.by===me?'You':esc(m.name||nameOf(m.by))} · ${chatTime(m.at)}</div>${m.photo&&okThumb(m.t)
         ?`<button type="button" class="phbtn chatph" data-ph="view" data-arg="${esc(m.photo)}" data-who="${esc(m.by===me?'You':(m.name||nameOf(m.by)))}" aria-label="Open photo"><img src="${esc(m.t)}" alt=""></button>`
         :m.audio?clipBtn({id:m.audio,dur:m.dur},'Voice message',m.by===me?'You':(m.name||nameOf(m.by)),'chattext voicebtn')
-        :`<div class="chattext">${esc(m.text)}</div>`}${chatReacts(m)}</div>`).join('')
+        :`<div class="chattext">${rich(m.text)}</div>`}${chatReacts(m)}</div>`).join('')
       :'<p class="small muted" style="text-align:center;margin:18px 0">No messages yet. Say hi 👋</p>'}</div>
     ${ui.rec?`<div class="chatform recbar"><span class="recdot" aria-hidden="true"></span><span id="rectime" style="flex:1">Recording ${fmtDur(recSecs())} / 1:00</span>
         <button class="small" type="button" data-chat="reccancel">Cancel</button><button class="primary small" type="button" data-chat="recsend">Send</button></div>`
-      :`<form class="chatform" data-chat="form"><input id="chatin" maxlength="500" autocomplete="off" placeholder="Write a message…"><button class="small micbtn" type="button" data-ph="pick" data-arg="chat" aria-label="Send a photo" title="Send a photo">📷</button>${canRecord()?'<button class="small micbtn" type="button" data-chat="rec" aria-label="Record a voice message" title="Voice message (up to 1 minute)">🎤</button>':''}<button class="primary small" type="submit">Send</button></form>`}</div>`;
+      :`<form class="chatform" data-chat="form"><input id="chatin" maxlength="500" autocomplete="off" placeholder="Message… (@ to tag)"><button class="small micbtn" type="button" data-ph="pick" data-arg="chat" aria-label="Send a photo" title="Send a photo">📷</button>${canRecord()?'<button class="small micbtn" type="button" data-chat="rec" aria-label="Record a voice message" title="Voice message (up to 1 minute)">🎤</button>':''}<button class="primary small" type="submit">Send</button></form>`}</div>`;
   const inp=$('#chatin');if(inp){inp.value=draft;if(hadFocus)inp.focus()}
   const list=$('#chatlist');if(atBottom)list.scrollTop=list.scrollHeight;
 }
@@ -885,7 +905,7 @@ async function startRec(){
 function stopRec(cancel){if(!recorder)return;recCancel=!!cancel;try{recorder.stop()}catch(e){}}
 function alertChat(t){const l=$('#chatlist');if(l){const p=document.createElement('p');p.className='small missmsg';p.textContent=t;l.appendChild(p);l.scrollTop=l.scrollHeight}}
 document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('[data-chat]');if(!b||b.tagName==='FORM')return;
-  if(b.dataset.chat==='open'){ui.chatOpen=true;chatMarkRead();renderChat();const i=$('#chatin');if(i)i.focus();const l=$('#chatlist');if(l)l.scrollTop=l.scrollHeight}
+  if(b.dataset.chat==='open'){ui.chatOpen=true;if(ui.bellOpen){ui.bellOpen=false;renderBell()}chatMarkRead();renderChat();const i=$('#chatin');if(i)i.focus();const l=$('#chatlist');if(l)l.scrollTop=l.scrollHeight}
   if(b.dataset.chat==='close'){stopRec(true);ui.chatOpen=false;chatMarkRead();renderChat()}
   if(b.dataset.chat==='pick'){ui.chatPick=ui.chatPick===b.dataset.arg?null:b.dataset.arg;renderChat()}
   if(b.dataset.chat==='react')toggleChatReact(b.dataset.arg).then(renderChat).catch(e=>console.warn('chat react',e));
@@ -904,13 +924,126 @@ function actSeen(id){return Number(lsGet('bm_actseen_'+id))||0}
 function actMark(){if(gid&&game&&document.visibilityState==='visible')lsSet('bm_actseen_'+gid,String(Date.now()))}
 function actNewGame(g){return !!(g&&g.act&&g.act.at&&g.act.by!==seatOf(g)&&g.act.at>actSeen(g.id))}
 function isNew(x){return !!(x&&x.by!==me&&(x.at||0)>(ui.actBase||0))}
-function newItems(){return posts.filter(p=>(p.kind==='note'||p.kind==='join')&&isNew(p))}
+function newItems(){return posts.filter(p=>(p.kind==='note'||p.kind==='join'||p.kind==='comment')&&isNew(p))}
 function newBanner(){
   if(ui.actHide)return '';const n=newItems();if(!n.length)return '';
   const who=[...new Set(n.map(p=>nm(p.by)))].slice(0,3).join(', ');const voice=n.some(p=>p.voice&&p.voice.length);
-  return `<section class="panel newbanner"><div class="spread"><span>🔵 <b>${n.length} new</b> note${n.length>1?'s':''}/repl${n.length>1?'ies':'y'} from ${esc(who)}${voice?' 🎤':''}</span><span class="row" style="gap:6px"><button class="small primary" data-act="jumpnew">Show me</button><button class="small" data-act="hidenew">Got it</button></span></div></section>`}
+  return `<section class="panel newbanner"><div class="spread"><span>🔵 <b>${n.length} new</b> comment${n.length>1?'s':''} or repl${n.length>1?'ies':'y'} from ${esc(who)}${voice?' 🎤':''}</span><span class="row" style="gap:6px"><button class="small primary" data-act="jumpnew">Show me</button><button class="small" data-act="hidenew">Got it</button></span></div></section>`}
 const NEWCHIP='<span class="newchip">NEW</span> ';
 const POSTS=()=>fs.collection('games').doc(gid).collection('posts');
+
+/* ---------- card comments, @tags and the 🔔 bell (Dan, 2026-11-19) ----------
+   Comments: posts with kind 'comment' and parent = the card post. No points; anyone in the game can comment on any card, own cards too.
+   Tags: "@Name" typed in any message box. Bell: things aimed at you (comments on your card, replies in a thread you're in,
+   check-in messages, tags in cards or chat). Read state is kept on this device only. */
+function commentsFor(id){return posts.filter(c=>c.kind==='comment'&&c.parent===id).sort((a,b)=>a.at-b.at)}
+function tagPeople(){return game&&game.players?game.players.filter(p=>!isBot(p)).map(p=>({id:p,n:String(nameOf(p)||'').trim()})).filter(x=>x.n).sort((a,b)=>b.n.length-a.n.length):[]}
+/* Where the tags are in a text: longest name first, and the name must end there (so "@Ann" doesn't match "@Anna"). */
+function tagSpans(text){
+  const s=String(text||''),low=s.toLowerCase(),out=[];if(s.indexOf('@')<0)return out;const people=tagPeople();
+  for(let i=s.indexOf('@');i>=0;i=s.indexOf('@',i+1)){
+    const hit=people.find(x=>{const n=x.n.toLowerCase();if(low.substr(i+1,n.length)!==n)return false;const next=s.charAt(i+1+n.length);return !next||!/[\p{L}\p{N}_]/u.test(next)});
+    if(hit){const same=people.filter(x=>x.n.toLowerCase()===hit.n.toLowerCase()).map(x=>x.id);out.push({a:i,z:i+1+hit.n.length,ids:same})}
+  }
+  return out;
+}
+function rich(text){
+  const s=String(text||'');let out='',at=0;
+  tagSpans(s).forEach(t=>{if(t.a<at)return;out+=esc(s.slice(at,t.a))+`<span class="mention ${t.ids.includes(me)?'me':''}">${esc(s.slice(t.a,t.z))}</span>`;at=t.z});
+  return out+esc(s.slice(at));
+}
+const tagsMe=text=>tagSpans(text).some(t=>t.ids.includes(me));
+/* While typing "@..." a row of names appears under the box; tap one to finish the tag. */
+const TAG_SEL='#ans,#c_text,#jc_text,#chatin,textarea[id^="j_"],textarea[id^="cm_"],textarea[id^="ed_"],input[id^="n_"]';
+function tagSuggest(el){
+  document.querySelectorAll('.tagrow').forEach(r=>r.remove());
+  if(!el||!game||!game.players)return;
+  const upto=el.value.slice(0,el.selectionStart==null?el.value.length:el.selectionStart),m=upto.match(/(^|[\s(])@([^@\n]{0,30})$/);if(!m)return;
+  const q=m[2].toLowerCase(),list=tagPeople().filter(x=>x.id!==me&&x.n.toLowerCase().startsWith(q)&&x.n.toLowerCase()!==q.trim());if(!list.length)return;
+  const row=document.createElement('div');row.className='tagrow small';
+  row.innerHTML='<span class="muted">Tag:</span>'+list.map(x=>`<button type="button" class="small" data-tagpick="${esc(x.id)}" data-for="${esc(el.id)}">@${esc(x.n)}</button>`).join('');
+  const form=el.id==='chatin'?el.closest('form'):null;
+  if(form)form.parentNode.insertBefore(row,form);else el.insertAdjacentElement('afterend',row);
+}
+document.addEventListener('input',e=>{if(e.target&&e.target.matches&&e.target.matches(TAG_SEL))tagSuggest(e.target)});
+document.addEventListener('pointerdown',e=>{if(e.target.closest&&e.target.closest('[data-tagpick]'))e.preventDefault()});
+document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('[data-tagpick]');if(!b)return;e.preventDefault();
+  const el=document.getElementById(b.dataset.for);if(!el)return;
+  const pos=el.selectionStart==null?el.value.length:el.selectionStart,head=el.value.slice(0,pos),at=head.lastIndexOf('@');if(at<0)return;
+  const ins='@'+nameOf(b.dataset.tagpick)+' ';el.value=head.slice(0,at)+ins+el.value.slice(pos);el.focus();
+  const c=at+ins.length;try{el.setSelectionRange(c,c)}catch(x){}
+  document.querySelectorAll('.tagrow').forEach(r=>r.remove());});
+
+function commentLine(c){
+  const r=(c.react||{}),who=Object.keys(r).filter(u=>(r[u]||[]).includes('❤️')),on=who.includes(me),inGame=game.players.includes(me);
+  return `<div class="cmt${isNew(c)?' isnew':''}" id="p_${c.id}"><div class="meta">${isNew(c)?NEWCHIP:''}<b>${esc(nm(c.by))}</b><span>${chatTime(c.at)}</span>${inGame?`<button type="button" class="react ${on?'on':''}" data-act="react" data-arg="${c.id}|❤️" aria-pressed="${on}" title="${esc(who.map(u=>nm(u)).join(', ')||'Love this comment')}">❤️${who.length?` <span>${who.length}</span>`:''}</button>`:''}</div>
+    ${c.text||c.voice?textBlock(c,voiceTag(c.voice,nm(c.by))):''}${photoTag(c.photos,nm(c.by))}</div>`;
+}
+const CM_SHOW=3;
+function commentBox(p){
+  const all=commentsFor(p.id),inGame=game.players.includes(me);
+  /* Long threads show the latest few, but never hide a new one. */
+  let from=Math.max(0,all.length-CM_SHOW);const firstNew=all.findIndex(isNew);if(firstNew>=0)from=Math.min(from,firstNew);
+  if((ui.cmAll||{})[p.id])from=0;
+  if(!all.length&&!inGame)return '';
+  const form=!inGame?'':ui.cmOpen===p.id
+    ?`<div class="field"><textarea id="cm_${p.id}" rows="2" maxlength="1000" placeholder="Write a comment… type @ to tag someone"></textarea></div><div class="row"><button class="primary small" data-act="cmpost" data-arg="${p.id}">Post comment</button><button class="small" data-act="cmclose">Cancel</button></div>`
+    :`<div class="row"><button class="small" data-act="cmopen" data-arg="${p.id}">💬 ${all.length?'Add a comment':'Comment'}</button></div>`;
+  return `${all.length?`<div class="comments"><div class="small muted">💬 ${all.length} comment${all.length>1?'s':''}${from?` · <button class="link" data-act="cmall" data-arg="${p.id}">Show ${from} earlier</button>`:''}</div>${all.slice(from).map(commentLine).join('')}</div>`:''}${form}`;
+}
+async function addComment(postId){
+  const p=posts.find(x=>x.id===postId);if(!p||!game.players.includes(me))return;
+  const f='cm_'+postId,box=$('#'+f),text=((box&&box.value)||'').trim().slice(0,1000),vo=takeVoice(f),ph=takePhotos(f);
+  if(!text&&!vo&&!ph){ui.msg='Type a comment first.';return}
+  const c={by:me,cat:null,idx:null,text,pts:0,kind:'comment',parent:postId,at:Date.now()};if(vo)c.voice=vo;if(ph)c.photos=ph;
+  await POSTS().add(c);bumpAct('comment');
+  if(box)box.value='';clearVoice(f);ui.cmOpen=null;
+}
+
+function forMe(){
+  if(!game||!game.players)return [];const out=[];
+  posts.forEach(x=>{
+    if(x.by===me)return;const par=x.parent?posts.find(q=>q.id===x.parent):null,who=nameOf(x.by);let t='';
+    if(tagsMe(x.text)||(x.commit&&tagsMe(x.commit.text)&&x.kind!=='kept'))t=`${who} tagged you`;
+    else if(x.kind==='comment'&&par){if(par.by===me)t=`${who} commented on your card`;
+      else if(posts.some(q=>q.parent===par.id&&q.by===me&&(q.kind==='comment'||q.kind==='join')&&q.at<x.at))t=`${who} also commented on ${nameOf(par.by)}’s card`}
+    else if(x.kind==='join'&&par&&par.by===me)t=`${who} joined in on your card`;
+    else if(x.kind==='note'&&par&&(par.by===me||(par.commit&&par.commit.partner===me)))t=`${who} sent a check-in message`;
+    if(t)out.push({id:x.id,at:x.at||0,t,s:x.text||(x.voice?'🎤 Voice':x.photos?'📷 Photo':'')});
+  });
+  chat.forEach(m=>{if(m.by!==me&&m.text&&tagsMe(m.text))out.push({chat:true,id:m.id,at:m.at||0,t:`${nameOf(m.by)} tagged you in the chat`,s:m.text})});
+  return out.sort((a,b)=>b.at-a.at).slice(0,30);
+}
+function bellOK(){return !!(gid&&game&&postsReady&&game.status!=='lobby'&&!game.together&&game.players&&game.players.includes(me)&&game.players.filter(p=>!isBot(p)).length>=2)}
+function bellReadAt(){return Number(lsGet('bm_bell_'+gid))||ui.actBase||0}
+function renderBell(){
+  let dock=$('#belldock');
+  if(!bellOK()){if(dock)dock.remove();ui.bellOpen=false;return}
+  if(!dock){dock=document.createElement('div');dock.id='belldock';document.body.appendChild(dock)}
+  dock.hidden=!!ui.chatOpen;
+  const items=forMe();
+  if(!ui.bellOpen){const r=bellReadAt(),n=items.filter(x=>x.at>r).length;
+    dock.innerHTML=`<button type="button" class="bellbtn ${n?'on':''}" data-bell="open" aria-label="Notifications${n?`: ${n} new`:''}">🔔${n?` <span class="chatnew">${n}</span>`:''}</button>`;return}
+  const old=$('#belllist'),top=old?old.scrollTop:0;
+  dock.innerHTML=`<div class="bellbox" role="dialog" aria-label="Notifications"><div class="chathead"><b>🔔 For you</b><span class="small muted">Comments, replies and tags</span><button type="button" class="link" data-bell="close" aria-label="Close notifications">✕</button></div>
+    <div id="belllist">${items.length?items.map(x=>`<button type="button" class="bellitem ${x.at>ui.bellBase?'new':''}" data-bell="go" data-arg="${x.chat?'chat':esc(x.id)}"><b>${esc(x.t)}</b> <span class="muted small">${chatTime(x.at)}</span>${x.s?`<span class="small bellsnip">${esc(x.s.slice(0,90))}</span>`:''}</button>`).join('')
+      :'<p class="small muted" style="text-align:center;margin:18px 12px">Nothing yet. You’ll see it here when someone comments on your card or tags you.</p>'}</div></div>`;
+  $('#belllist').scrollTop=top;
+}
+function showPost(id){
+  const x=posts.find(q=>q.id===id);if(!x)return;
+  if(x.kind==='comment'){ui.cmAll=ui.cmAll||{};ui.cmAll[x.parent]=true;render()}
+  const el=document.getElementById('p_'+id);if(!el)return;
+  let d=el.closest('details');while(d){d.open=true;d=d.parentElement&&d.parentElement.closest('details')}
+  el.scrollIntoView({behavior:'smooth',block:'center'});el.classList.add('flash');setTimeout(()=>el.classList.remove('flash'),2500);
+}
+document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('[data-bell]');if(!b)return;e.preventDefault();const k=b.dataset.bell;
+  if(k==='open'){ui.bellBase=bellReadAt();ui.bellOpen=true;if(ui.chatOpen){stopRec(true);ui.chatOpen=false;renderChat()}lsSet('bm_bell_'+gid,String(Date.now()));renderBell()}
+  if(k==='close'){ui.bellOpen=false;lsSet('bm_bell_'+gid,String(Date.now()));renderBell()}
+  if(k==='go'){ui.bellOpen=false;lsSet('bm_bell_'+gid,String(Date.now()));
+    if(b.dataset.arg==='chat'){ui.chatOpen=true;chatMarkRead();renderChat();const l=$('#chatlist');if(l)l.scrollTop=l.scrollHeight}else showPost(b.dataset.arg);
+    renderBell()}});
+
 
 async function saveName(){
   const v=(($('#myname')||{}).value||'').trim().slice(0,30);
@@ -1281,6 +1414,7 @@ function render(){
   applyTip();
   applyVoice();
   applyPhotos();
+  renderBell();
   if(game&&game.status==='over')loadFulls();
 }
 /* ---------- beginner tips: one small yellow bubble pointing at the next thing to do ----------
@@ -1657,7 +1791,7 @@ function commitRow(p,mode){
   const ask=mode==='partner'&&!c.done?`Hi ${nameOf(p.by)}, how’s it going with: ${c.text}?`:'';
   return `<div class="commit"><div class="spread"><span class="answer">${esc(c.text)}${voiceTag(c.voice,nameOf(p.by))}</span>${status}</div>${photoTag(c.photos,nameOf(p.by))}
     <div class="small muted">${who} · by ${esc(fmtDate(c.due))} · ${CATS[p.cat].name}</div>
-    ${ns.length?`<div class="replies" style="margin-top:6px">${ns.map(n=>`<div class="reply small${isNew(n)?' isnew':''}">${isNew(n)?NEWCHIP:''}<b>${esc(nm(n.by))}</b> <span class="muted">${new Date(n.at).toLocaleDateString(undefined,{month:'short',day:'numeric'})}</span>${textBlock(n,voiceTag(n.voice,nm(n.by)))}${photoTag(n.photos,nm(n.by))}</div>`).join('')}</div>`:''}
+    ${ns.length?`<div class="replies" style="margin-top:6px">${ns.map(n=>`<div id="p_${n.id}" class="reply small${isNew(n)?' isnew':''}">${isNew(n)?NEWCHIP:''}<b>${esc(nm(n.by))}</b> <span class="muted">${new Date(n.at).toLocaleDateString(undefined,{month:'short',day:'numeric'})}</span>${textBlock(n,voiceTag(n.voice,nm(n.by)))}${photoTag(n.photos,nm(n.by))}</div>`).join('')}</div>`:''}
     ${canTalk?`<div class="row" style="margin-top:6px"><input id="n_${p.id}" placeholder="${esc(mode==='partner'?'Send a check-in message':'Send an update or reply')}" style="flex:1;min-width:160px">
       <button class="small" data-act="note" data-arg="${p.id}">Send</button>
       ${ask?`<button class="small" data-act="asknote" data-arg="${p.id}">Ask how it’s going</button>`:''}
@@ -1709,12 +1843,12 @@ function sheetIcs(){
 function editTag(x){return x.edited?' <span class="muted small" title="Edited">(edited)</span>':''}
 function editBtn(x){return (x.by===me&&x.text)?` <a href="#" class="small" data-act="edit" data-arg="${x.id}" style="margin-left:6px">✏️ Edit</a>`:''}
 function textBlock(x,extra){
-  if(ui.editId===x.id)return `<div class="answer"><textarea id="ed_${x.id}" rows="3" maxlength="${x.kind==='note'?1000:4000}" style="width:100%">${esc(x.text)}</textarea><div class="row" style="margin-top:4px"><button class="small primary" data-act="editsave" data-arg="${x.id}">Save</button><button class="small" data-act="editcancel" data-arg="${x.id}">Cancel</button></div></div>`;
-  return `<div class="answer">${esc(x.text)}${extra||''}${editTag(x)}${editBtn(x)}</div>`;
+  if(ui.editId===x.id)return `<div class="answer"><textarea id="ed_${x.id}" rows="3" maxlength="${x.kind==='note'||x.kind==='comment'?1000:4000}" style="width:100%">${esc(x.text)}</textarea><div class="row" style="margin-top:4px"><button class="small primary" data-act="editsave" data-arg="${x.id}">Save</button><button class="small" data-act="editcancel" data-arg="${x.id}">Cancel</button></div></div>`;
+  return `<div class="answer">${rich(x.text)}${extra||''}${editTag(x)}${editBtn(x)}</div>`;
 }
 async function saveEdit(id){
   const x=posts.find(q=>q.id===id);if(!x||x.by!==me)return;
-  const box=$('#ed_'+id);const t=((box&&box.value)||'').trim().slice(0,x.kind==='note'?1000:4000);
+  const box=$('#ed_'+id);const t=((box&&box.value)||'').trim().slice(0,x.kind==='note'||x.kind==='comment'?1000:4000);
   if(!t){ui.msg='The text can’t be empty.';return}
   if(t!==x.text)await POSTS().doc(id).update({text:t,edited:Date.now()});
   ui.editId=null;
@@ -1785,20 +1919,20 @@ function postLine(p){
     +(p.helped?` <span class="chip" style="background:var(--HH)">Helping Hand → ${esc(nm(p.helped))}</span>`:'');
   if(p.kind==='pass')return `<div class="post"><div class="meta"><b>${esc(nm(p.by))}</b> passed on a card ${chip}<span>${when}</span></div></div>`;
   if(p.kind==='saved')return `<div class="post"><div class="meta"><b>${esc(nm(p.by))}</b> saved a ${CATS[p.cat].name} card to gather courage<span>${when}</span></div></div>`;
-  if(p.kind==='kept')return `<div class="post"><div class="meta"><b>${esc(nm(p.by))}</b> kept a commitment 🎉 ${chip}<span>${when}</span></div><div class="answer">${esc(p.text)}</div></div>`;
+  if(p.kind==='kept')return `<div class="post" id="p_${p.id}"><div class="meta"><b>${esc(nm(p.by))}</b> kept a commitment 🎉 ${chip}<span>${when}</span></div><div class="answer">${rich(p.text)}</div>${commentBox(p)}</div>`;
   const deck=p.card||p.cat;const t=cardText(deck,p.idx);const reps=posts.filter(r=>r.kind==='join'&&r.parent===p.id);
   const canJoin=game.players.includes(me)&&p.by!==me&&!reps.some(r=>r.by===me)&&JOINABLE.test(t)&&game.status==='playing'&&!p.card;
-  return `<div class="post"><div class="meta"><b>${esc(nm(p.by))}</b>${p.kind==='bonus'?' (bonus card)':''} ${chip}<span>+${p.pts}</span><span>${when}</span>${heartBtn(deck,p.idx)}</div>
+  return `<div class="post" id="p_${p.id}"><div class="meta"><b>${esc(nm(p.by))}</b>${p.kind==='bonus'?' (bonus card)':''} ${chip}<span>+${p.pts}</span><span>${when}</span>${heartBtn(deck,p.idx)}</div>
   <details class="qline"><summary class="small" style="font-family:var(--body);font-weight:500">The card</summary>${esc(t)}</details>
   ${p.text||p.voice?textBlock(p,voiceTag(p.voice,nm(p.by))):''}${photoTag(p.photos,nm(p.by))}
   ${p.commit?`<div class="small muted">Committed: ${esc(p.commit.text)}${voiceTag(p.commit.voice,nm(p.by))}</div>${photoTag(p.commit.photos,nm(p.by))}`:''}
-  ${reps.length?`<div class="replies">${reps.map(r=>`<div class="reply${isNew(r)?' isnew':''}"><div class="meta">${isNew(r)?NEWCHIP:''}<b>${esc(nm(r.by))}</b> joined in <span>+${r.pts}</span></div>${r.text||r.voice?textBlock(r,voiceTag(r.voice,nm(r.by))):''}${photoTag(r.photos,nm(r.by))}${r.commit?`<div class="small muted">Committed: ${esc(r.commit.text)}${voiceTag(r.commit.voice,nm(r.by))}</div>${photoTag(r.commit.photos,nm(r.by))}`:''}${reactRow(r)}</div>`).join('')}</div>`:''}
+  ${reps.length?`<div class="replies">${reps.map(r=>`<div id="p_${r.id}" class="reply${isNew(r)?' isnew':''}"><div class="meta">${isNew(r)?NEWCHIP:''}<b>${esc(nm(r.by))}</b> joined in <span>+${r.pts}</span></div>${r.text||r.voice?textBlock(r,voiceTag(r.voice,nm(r.by))):''}${photoTag(r.photos,nm(r.by))}${r.commit?`<div class="small muted">Committed: ${esc(r.commit.text)}${voiceTag(r.commit.voice,nm(r.by))}</div>${photoTag(r.commit.photos,nm(r.by))}`:''}${reactRow(r)}</div>`).join('')}</div>`:''}
   ${reactRow(p)}
   ${canJoin?(ui.joinOpen===p.id?joinPanel(p)
-    :`<div class="row"><button class="small" data-act="joinopen" data-arg="${p.id}">Join in on this card</button></div>`):''}</div>`;
+    :`<div class="row"><button class="small" data-act="joinopen" data-arg="${p.id}">Join in on this card</button></div>`):''}${commentBox(p)}</div>`;
 }
 function feed(){
-  const top=posts.filter(p=>p.kind!=='join'&&p.kind!=='note').slice().reverse();
+  const top=posts.filter(p=>p.kind!=='join'&&p.kind!=='note'&&p.kind!=='comment').slice().reverse();
   return `<section class="panel"><h2>The story so far</h2>${top.length?`<div class="feed">${top.map(postLine).join('')}</div>`:'<p class="muted">No turns yet. The first answers will show up here.</p>'}</section>`;
 }
 function donateLine(){return `<p class="small" style="text-align:center;margin:14px 0"><a href="https://www.paypal.com/ncp/payment/HYCNE977CKAAA" target="_blank" rel="noopener">♥ Enjoying the free games? Support them</a></p>`}
@@ -1865,6 +1999,9 @@ document.addEventListener('click',e=>{
   if(a==='joinopen'){ui.joinOpen=arg;const jp=posts.find(x=>x.id===arg);const jl=jp?joinLimit(jp):{share:0};ui.jShare=jl.share>0;ui.jOther=false;ui.jCommit=false;render();return}
   if(a==='jopt'){if(arg==='share')ui.jShare=b.checked;else if(arg==='other')ui.jOther=b.checked;else ui.jCommit=b.checked;render();return}
   if(a==='joinclose'){ui.joinOpen=null;render();return}
+  if(a==='cmopen'){ui.cmOpen=arg;render();const i=$('#cm_'+arg);if(i)i.focus();return}
+  if(a==='cmclose'){if(ui.cmOpen)clearVoice('cm_'+ui.cmOpen);const i=ui.cmOpen&&$('#cm_'+ui.cmOpen);if(i)i.value='';ui.cmOpen=null;render();return}
+  if(a==='cmall'){ui.cmAll=ui.cmAll||{};ui.cmAll[arg]=true;render();return}
   if(a==='edit'){e.preventDefault();ui.editId=arg;render();setTimeout(()=>{const i=$('#ed_'+arg);if(i)i.focus()},0);return}
   if(a==='editcancel'){ui.editId=null;render();return}
   if(a==='editname'){ui.editName=true;render();return}
@@ -1899,7 +2036,7 @@ document.addEventListener('click',e=>{
   const map={keepgoing:keepGoing,savename:saveName,new:newGame,join:joinGame,spin,pass:passCard,save:saveCard,post:postAnswer,editsave:()=>saveEdit(arg),skip:skipTurn,endnow:endNow,
     suggest:addSuggestion,practice:newPractice,plus:()=>plusOne(arg),remove:()=>removePlayer(arg),claimask:()=>claimAsk(arg),claimas:()=>claimAs(arg),linkreq:()=>{const [u,seat]=arg.split('|');return linkReq(u,seat)},merge:()=>mergeSeat(arg),unwatch:()=>{ui.justWatch=false},notdup:()=>{lsSet('bm_notdup_'+gid,'1')},claimcancel:claimCancel,claimyes:()=>claimYes(arg),claimno:()=>claimNo(arg),joinreq:joinReq,joinreqcancel:joinReqCancel,joinyes:()=>joinYes(arg),joinno:()=>joinNo(arg),justwatch:()=>{ui.justWatch=true},visok:visOk,alertson:alertsEnable,alertsoff:alertsDisable,
     start:()=>startGame(+(($('#target')||{}).value||2)),choose:()=>choose(arg),playsaved:()=>playSaved(+arg),
-    joinpost:()=>joinIn(arg),done:()=>markDone(arg),ffpost:()=>postFF(arg),note:()=>addNote(arg),asknote:()=>{const p=posts.find(x=>x.id===arg);return addNote(arg,p?`How’s it going with: ${p.commit.text}?`:'')},heart:()=>{const [c,i]=arg.split(':');return toggleHeart(c,+i)}};
+    cmpost:()=>addComment(arg),joinpost:()=>joinIn(arg),done:()=>markDone(arg),ffpost:()=>postFF(arg),note:()=>addNote(arg),asknote:()=>{const p=posts.find(x=>x.id===arg);return addNote(arg,p?`How’s it going with: ${p.commit.text}?`:'')},heart:()=>{const [c,i]=arg.split(':');return toggleHeart(c,+i)}};
   if(map[a])act(map[a]);
 });
 boot();
