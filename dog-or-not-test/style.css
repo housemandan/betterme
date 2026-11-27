@@ -1,0 +1,95 @@
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:#fff6e8;color:#33231a;-webkit-tap-highlight-color:transparent}
+.screen{min-height:100vh;min-height:100dvh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:16px;text-align:center}
+h1{font-size:clamp(40px,11vw,72px);margin:0}
+h2{margin:0;font-size:28px}
+p{margin:0}
+.sub{font-size:18px}
+button{font:inherit;color:inherit;cursor:pointer;touch-action:manipulation}
+.big{width:min(340px,100%);border:0;border-radius:18px;padding:16px;font-size:24px;font-weight:800;background:#e8590c;color:#fff;box-shadow:0 5px 0 #a63e06}
+.big:active{transform:translateY(3px);box-shadow:0 2px 0 #a63e06}
+.big small{display:block;font-size:14px;font-weight:500;margin-top:3px}
+.big.alt{background:#1971c2;box-shadow:0 5px 0 #0f4c85}
+.big:disabled{opacity:.45;cursor:default}
+.link{background:none;border:0;text-decoration:underline;padding:8px;font-size:15px}
+
+#hearts{font-size:22px;line-height:1;letter-spacing:3px;flex:none}
+#hearts:empty,#rank:empty{display:none}
+#rank{font-size:22px;font-weight:800;color:#e8590c;animation:pop .6s ease-out}
+@keyframes pop{0%{transform:scale(.5)}70%{transform:scale(1.2)}100%{transform:scale(1)}}
+.face{animation:pop .45s ease-out}
+.confetti{position:fixed;inset:0;overflow:hidden;pointer-events:none;z-index:10}
+.confetti i{position:absolute;top:-50px;font-style:normal;animation:fall 2s ease-in both}
+@keyframes fall{to{transform:translateY(calc(100vh + 80px)) rotate(420deg)}}
+.settings{width:min(380px,100%);background:#fff;border-radius:16px;padding:8px 14px;margin-top:6px}
+.row{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:7px 0;text-align:left;font-size:15px}
+.seg{display:flex;border:2px solid #33231a;border-radius:10px;overflow:hidden;flex:none}
+.seg button{border:0;background:#fff;padding:7px 10px;font-size:14px}
+.seg button.on{background:#33231a;color:#fff}
+.speeds{display:flex;gap:5px;width:min(380px,100%)}
+.speeds button{flex:1;min-width:0;border:2px solid #e8590c;border-radius:10px;background:#fff;padding:5px 2px;font-size:13px;font-weight:700}
+.speeds button small{display:block;font-weight:400}
+.speeds button.on{background:#e8590c;color:#fff}
+.board{width:min(340px,92vw);margin:0;padding:8px 14px 8px 38px;background:#fff;border-radius:14px;text-align:left}
+.board li{padding:3px 0}
+.board li span{display:inline-block;max-width:55%;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;vertical-align:bottom}
+.board li b{float:right}
+.board li.mine{color:#e8590c;font-weight:700}
+#nameRow{font-size:15px}
+#name{font:inherit;width:170px;padding:7px 10px;border:2px solid #33231a;border-radius:10px;margin-left:6px}
+#leaders{justify-content:flex-start}
+.note{font-size:13px;color:#7a6656}
+
+#game{justify-content:flex-start;gap:8px;padding:8px;height:100vh;height:100dvh;min-height:0;overflow:hidden}
+#game header{display:flex;justify-content:space-between;align-items:center;width:min(900px,100%)}
+#game header b{font-size:17px}
+.timer{width:min(900px,100%);height:12px;border-radius:6px;background:#eadbc6;overflow:hidden;flex:none}
+.timer i{display:block;height:100%;width:100%;background:#2b8a3e;transform-origin:left}
+.timer i.low{background:#e03131}
+#prompt{font-size:24px}
+#board{flex:1;min-height:0;width:100%;display:flex;gap:10px;align-items:center;justify-content:center}
+#board.column{flex-direction:column}
+.tile{position:relative;overflow:hidden;padding:0;border:0;border-radius:14px;background:#eadbc6;flex:none}
+.tile img{position:absolute;max-width:none;pointer-events:none;user-select:none}
+.tile::after{content:"";position:absolute;inset:0;border-radius:14px;pointer-events:none}
+.tile.good::after{border:7px solid #2b8a3e}
+.tile.bad::after{border:7px solid #e03131}
+.tile.bad img{filter:grayscale(.7)}
+.tile span{position:absolute;right:0;bottom:0;background:rgba(0,0,0,.65);color:#fff;font-size:11px;padding:3px 6px;border-top-left-radius:6px;z-index:1}
+.tile .mark{left:8px;top:8px;right:auto;bottom:auto;border-radius:8px;font-size:17px;font-weight:800;padding:4px 10px}
+#message{height:30px;font-size:20px;font-weight:800;flex:none}
+
+.face{font-size:64px;line-height:1}
+#resultText{font-size:18px;max-width:360px}
+
+#credits{justify-content:flex-start}
+#creditList{text-align:left;max-width:640px;font-size:14px;line-height:1.5;overflow-wrap:anywhere}
+#creditList li{margin-bottom:10px}
+
+/* walking dog */
+.street{width:min(520px,100%);height:170px;position:relative;overflow:hidden;border-bottom:5px dashed #c9ad8a}
+.walker{position:absolute;bottom:-6px;left:0;animation:stroll 11s linear infinite}
+.walker svg{display:block;overflow:visible}
+@keyframes stroll{
+  0%{left:-210px;transform:scaleX(1)}
+  47%{left:100%;transform:scaleX(1)}
+  50%{left:100%;transform:scaleX(-1)}
+  97%{left:-210px;transform:scaleX(-1)}
+  100%{left:-210px;transform:scaleX(1)}
+}
+.body{animation:bob .3s ease-in-out infinite alternate}
+@keyframes bob{to{transform:translateY(-7px) rotate(-2deg)}}
+.leg{transform-box:fill-box;transform-origin:50% 8px;animation:step .6s ease-in-out infinite alternate}
+.l1,.l4{animation-delay:-.6s}
+@keyframes step{from{transform:rotate(32deg)}to{transform:rotate(-32deg)}}
+.tail{transform-origin:42px 74px;animation:wag .22s ease-in-out infinite alternate}
+@keyframes wag{from{transform:rotate(-18deg)}to{transform:rotate(22deg)}}
+.ear{transform-origin:128px 34px;animation:flap .3s ease-in-out infinite alternate}
+@keyframes flap{to{transform:rotate(24deg)}}
+.tongue{transform-origin:168px 78px;animation:pant .3s ease-in-out infinite alternate}
+@keyframes pant{to{transform:scaleY(1.35)}}
+.head{transform-origin:130px 80px;animation:nod .9s ease-in-out infinite alternate}
+@keyframes nod{to{transform:rotate(8deg)}}
+@media (prefers-reduced-motion:reduce){.walker{animation:none;left:calc(50% - 100px)}.body,.leg,.head,.ear,.tongue{animation:none}}
+@media (max-height:600px){#prompt{font-size:18px}#message{height:24px;font-size:16px}#game{gap:4px}}

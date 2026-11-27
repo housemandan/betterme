@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="referrer" content="no-referrer">
+<meta name="robots" content="noindex, nofollow">
+<title>Dog or Not</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='85' font-size='85'>🐶</text></svg>">
+<link rel="stylesheet" href="style.css?v=1">
+</head>
+<body>
+
+<main id="intro" class="screen">
+  <h1>Dog or Not?</h1>
+  <p class="sub">One is a very good dog. One is not.</p>
+  <div class="street" aria-hidden="true">
+    <div class="walker">
+      <svg viewBox="0 0 200 150" width="200" height="150">
+        <g class="body">
+          <g class="tail"><path d="M42 74 Q14 62 18 34" stroke="#b8763a" stroke-width="13" fill="none" stroke-linecap="round"/></g>
+          <rect class="leg l2" x="56" y="92" width="14" height="44" rx="7" fill="#8f5a2a"/>
+          <rect class="leg l4" x="118" y="92" width="14" height="44" rx="7" fill="#8f5a2a"/>
+          <ellipse cx="90" cy="86" rx="56" ry="29" fill="#c98a4b"/>
+          <ellipse cx="96" cy="99" rx="36" ry="14" fill="#f3dcc0"/>
+          <rect class="leg l1" x="44" y="94" width="15" height="46" rx="7" fill="#c98a4b"/>
+          <rect class="leg l3" x="106" y="94" width="15" height="46" rx="7" fill="#c98a4b"/>
+          <g class="head">
+            <circle cx="146" cy="56" r="33" fill="#c98a4b"/>
+            <ellipse cx="168" cy="68" rx="22" ry="15" fill="#f3dcc0"/>
+            <path class="tongue" d="M163 78 q4 22 13 14 q6 -6 0 -16 z" fill="#ff7b8a"/>
+            <ellipse cx="187" cy="62" rx="8" ry="6.5" fill="#33231a"/>
+            <circle cx="148" cy="46" r="9" fill="#fff"/><circle cx="151" cy="47" r="4.5" fill="#222"/>
+            <circle cx="168" cy="43" r="7" fill="#fff"/><circle cx="170" cy="45" r="3.5" fill="#222"/>
+            <g class="ear"><path d="M128 32 Q98 36 108 76 Q122 84 134 56 Z" fill="#8f5a2a"/></g>
+          </g>
+        </g>
+      </svg>
+    </div>
+  </div>
+  <button id="play" class="big">Come at me, bro</button>
+</main>
+
+<main id="menu" class="screen" hidden>
+  <h2>Dog or Not?</h2>
+  <button class="big" id="goSprint">⚡ Sprint<small id="sprintInfo"></small></button>
+  <div id="speeds" class="speeds" aria-label="Sprint speed"></div>
+  <button class="big alt" id="goCampaign">🏆 Campaign<small id="campaignInfo"></small></button>
+  <button class="link" id="restart">Start campaign over</button>
+  <section class="settings">
+    <div class="row"><span>Pictures</span>
+      <div class="seg" id="animals"><button data-v="dogs">Dogs only</button><button data-v="all">All animals</button></div>
+    </div>
+    <p class="note" id="animalNote"></p>
+    <div class="row"><span>Sound</span>
+      <div class="seg" id="sound"><button data-v="on">On</button><button data-v="off">Off</button></div>
+    </div>
+  </section>
+  <button class="link" id="goLeaders">🥇 Leaderboards</button>
+  <button class="link" id="goCredits">Photo credits</button>
+</main>
+
+<main id="game" class="screen" hidden>
+  <header>
+    <button class="link" id="quit">✕ Quit</button>
+    <b id="status"></b>
+    <button class="link" id="mute" aria-label="Sound on or off"></button>
+  </header>
+  <div class="timer"><i id="bar"></i></div>
+  <div id="hearts" aria-label="Lives left"></div>
+  <h2 id="prompt">Pick the dog</h2>
+  <div id="board">
+    <button class="tile" id="t0" aria-label="First picture"></button>
+    <button class="tile" id="t1" aria-label="Second picture"></button>
+  </div>
+  <div id="message" role="status"></div>
+</main>
+
+<main id="ready" class="screen" hidden>
+  <h2 id="readyTitle"></h2>
+  <p id="readyText"></p>
+  <p id="readyLoad" class="note"></p>
+  <button class="big" id="start">Go!</button>
+  <button class="link" id="readyBack">Back</button>
+</main>
+
+<main id="result" class="screen" hidden>
+  <div id="resultFace" class="face"></div>
+  <h2 id="resultTitle"></h2>
+  <p id="resultText"></p>
+  <p id="rank" role="status"></p>
+  <label id="nameRow">Your name <input id="name" maxlength="14" autocomplete="off" placeholder="Player"></label>
+  <div id="resultBoard"></div>
+  <button class="big" id="again"></button>
+  <button class="link" id="home">Menu</button>
+</main>
+
+<main id="leaders" class="screen" hidden>
+  <button class="link" id="leadersBack">← Back</button>
+  <h2>Leaderboards</h2>
+  <div class="seg" id="boardTabs"><button data-v="sprint">Sprint</button><button data-v="campaign">Campaign</button></div>
+  <div id="boardSpeeds" class="speeds"></div>
+  <div id="boardList"></div>
+  <p class="note">Scores are saved on this device only.</p>
+</main>
+
+<main id="credits" class="screen" hidden>
+  <button class="link" id="creditsBack">← Back</button>
+  <h2>Photo credits</h2>
+  <p class="note">All pictures are shown cropped to a square, and may be mirrored.</p>
+  <ol id="creditList"></ol>
+</main>
+
+<script src="game.js?v=1"></script>
+</body>
+</html>
