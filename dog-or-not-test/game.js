@@ -168,6 +168,10 @@ function deal() {
   return deck;
 }
 
+/* ---------- wording: "dog" in Dogs only, "animal" in All animals ---------- */
+const noun = () => save.animals === 'all' ? 'animal' : 'dog';
+const nouns = n => `${n} ${noun()}${n === 1 ? '' : 's'}`;
+
 /* ---------- screens ---------- */
 function show(id) {
   document.querySelectorAll('.screen').forEach(s => { s.hidden = s.id !== id; });
@@ -292,7 +296,7 @@ function prepare(mode) {
     ? `${hearts(save.run.lives)} A miss or running out of time costs a heart.`
     : `${speedOf(run.secs).name}: ${secsText(run.secs)} per pick, one life. How far can you get?`;
   // campaign: show the goal of the coming level in big type
-  $('goal').replaceChildren(...(level ? [`🐶 ${level.dogs} dogs`, `⏱️ ${secsText(level.seconds)}`]
+  $('goal').replaceChildren(...(level ? [`${save.animals === 'all' ? '🐾' : '🐶'} ${nouns(level.dogs)}`, `⏱️ ${secsText(level.seconds)}`]
     .map(t => Object.assign(document.createElement('b'), { textContent: t })) : []));
   const first = run.deck.slice(0, LOAD_AHEAD);
   let done = 0, ok = 0;
@@ -335,7 +339,7 @@ async function nextPair() {
   const tiles = [$('t0'), $('t1')];
   tiles.forEach(t => { t.replaceChildren(); t.className = 'tile'; });
   $('message').textContent = '';
-  $('prompt').textContent = `Pick the ${pair.find}`;
+  $('prompt').textContent = `Pick the ${noun()}`;
   loadAhead();
   const slow = setTimeout(() => { if (id === runId) $('message').textContent = 'Fetching pictures…'; }, 250);
   let timer;
@@ -438,7 +442,7 @@ function finish(why) {
   } else if (why === 'passed') {
     save.run.time += run.level.seconds - Math.max(0, run.left);
     save.run.level = run.levelNo + 1; persist();
-    const spare = `${run.score} dogs with ${Math.max(0, run.left).toFixed(1)} seconds to spare.`;
+    const spare = `${nouns(run.score)} with ${Math.max(0, run.left).toFixed(1)} seconds to spare.`;
     play('win');
     confetti(24, ['🦴', '🐾', '🎉']);
     if (run.levelNo >= LEVELS.length) {
@@ -449,7 +453,7 @@ function finish(why) {
     } else {
       const next = LEVELS[run.levelNo];
       face = '🎉'; title = `Level ${run.levelNo} passed!`;
-      text = `${spare} ${hearts(save.run.lives)} Next, level ${save.run.level}: ${next.dogs} dogs in ${secsText(next.seconds)}.`;
+      text = `${spare} ${hearts(save.run.lives)} Next, level ${save.run.level}: ${nouns(next.dogs)} in ${secsText(next.seconds)}.`;
       button = `Level ${save.run.level}`;
     }
     action = () => prepare('campaign');
@@ -462,7 +466,7 @@ function finish(why) {
   } else {
     face = '🐕';
     title = why === 'offline' ? 'Pictures are not loading' : why === 'outofpictures' ? 'Out of pictures!' : 'Time’s up!';
-    text = `You found ${run.score} of ${run.level.dogs} dogs. ${hearts(save.run.lives)}`;
+    text = `You found ${run.score} of ${nouns(run.level.dogs)}. ${hearts(save.run.lives)}`;
     button = `Retry level ${run.levelNo}`; action = () => prepare('campaign');
   }
   if (why === 'offline') text += ' Check your internet and try again.';
