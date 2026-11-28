@@ -35,6 +35,7 @@ const SPEEDS = [
 const SPRINT_SECONDS = 1;     // Sprint: speed picked for a new player
 const BOARD_SIZE = 10;        // names kept on each leaderboard
 const MIRROR_CHANCE = 0.5;    // how often each picture is shown flipped left-to-right
+const MAX_SAME_SIDE = 4;      // the dog is never in the same spot more than this many times in a row
 const LOAD_AHEAD = 5;         // pairs loaded in advance
 const GIVE_UP_LOADING = 25;   // seconds before a stuck pair is skipped
 const CHEERS = ['Good boy!', 'Nailed it!', 'Woof yes!', 'Sharp eyes!', 'Top dog!'];
@@ -43,6 +44,7 @@ const OOPS = ['Fooled you!', 'Ruh-roh!', 'Not quite, bro!', 'So close!'];
 /* ===================================================================== */
 const $ = id => document.getElementById(id);
 const pick = list => list[Math.random() * list.length | 0];
+const secsText = n => `${n} second${n === 1 ? '' : 's'}`;
 const shuffle = list => {
   for (let i = list.length - 1; i > 0; i--) { const j = Math.random() * (i + 1) | 0; [list[i], list[j]] = [list[j], list[i]]; }
   return list;
@@ -287,8 +289,11 @@ function prepare(mode) {
   run.left = run.limit;
   $('readyTitle').textContent = level ? `Level ${run.levelNo}` : 'Sprint';
   $('readyText').textContent = level
-    ? `Find ${level.dogs} dogs in ${level.seconds} seconds. ${hearts(save.run.lives)} A miss or running out of time costs a heart.`
-    : `${speedOf(run.secs).name}: ${run.secs} seconds per pick, one life. How far can you get?`;
+    ? `${hearts(save.run.lives)} A miss or running out of time costs a heart.`
+    : `${speedOf(run.secs).name}: ${secsText(run.secs)} per pick, one life. How far can you get?`;
+  // campaign: show the goal of the coming level in big type
+  $('goal').replaceChildren(...(level ? [`🐶 ${level.dogs} dogs`, `⏱️ ${secsText(level.seconds)}`]
+    .map(t => Object.assign(document.createElement('b'), { textContent: t })) : []));
   const first = run.deck.slice(0, LOAD_AHEAD);
   let done = 0, ok = 0;
   const label = () => { $('readyLoad').textContent = done < first.length ? `Fetching pictures… ${done} of ${first.length}` : ok ? 'Ready!' : 'Pictures did not load. Check your internet, then press Go to retry.'; };
@@ -345,6 +350,11 @@ async function nextPair() {
   run.skipped = 0;
   run.pair = pair;
   run.sides = shuffle(['animal', 'thing']);
+  const spot = run.sides.indexOf('animal');
+  if (spot === run.spot && run.same >= MAX_SAME_SIDE) run.sides.reverse();
+  const now = run.sides.indexOf('animal');
+  run.same = now === run.spot ? run.same + 1 : 1;
+  run.spot = now;
   // each picture may be mirrored, so pairs are harder to memorize ("noFlip": true in the data turns this off)
   run.flips = run.sides.map(side => !pair[side].noFlip && Math.random() < MIRROR_CHANCE);
   tiles.forEach((t, i) => {
@@ -437,7 +447,9 @@ function finish(why) {
       face = '🏆'; title = 'Campaign complete!'; text = `All ${LEVELS.length} levels, ${hearts(lives)} left.`;
       button = 'Play again';
     } else {
-      face = '🎉'; title = `Level ${run.levelNo} passed!`; text = `${spare} ${hearts(save.run.lives)}`;
+      const next = LEVELS[run.levelNo];
+      face = '🎉'; title = `Level ${run.levelNo} passed!`;
+      text = `${spare} ${hearts(save.run.lives)} Next, level ${save.run.level}: ${next.dogs} dogs in ${secsText(next.seconds)}.`;
       button = `Level ${save.run.level}`;
     }
     action = () => prepare('campaign');

@@ -60,6 +60,8 @@ button{font:inherit;color:inherit;cursor:pointer;touch-action:manipulation}
 .tile .mark{left:8px;top:8px;right:auto;bottom:auto;border-radius:8px;font-size:17px;font-weight:800;padding:4px 10px}
 #message{height:30px;font-size:20px;font-weight:800;flex:none}
 
+#goal{display:flex;flex-direction:column;gap:6px;font-size:34px}
+#goal:empty{display:none}
 .face{font-size:64px;line-height:1}
 #resultText{font-size:18px;max-width:360px}
 
